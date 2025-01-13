@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.loader {
+  border-top-color: #00936C;
+  -webkit-animation: spin 1.5s linear infinite;
+  animation: spin 1.5s linear infinite;
+}
+
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #00936c;
+  border-radius: 5px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #00936c;
+}
+
+/* Custom styles for radio buttons */
+input[type="radio"].custom-radio:checked {
+  background-color: #00936C;
+  border-color: #00936C;
+  outline: none;
+}
+
+input[type="radio"].custom-radio {
+  appearance: none;
+  background-color: #fff;
+  border: 1px solid #d1d5db; /* Tailwind gray-300 */
+  border-radius: 50%;
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+input[type="radio"].custom-radio:checked::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.1rem;
+  height: 0.1rem;
+  background-color: #00936C;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* for all cards of registration */
+:root {
+  --default-width: 80%;
+  --small-width: 70%;
+  --medium-width: 60%;
+  --large-width: 50%;
+  --xlarge-width: 31%;
+  --xxlarge-width: 21%;
+}
+
+.signup-container {
+  width: var(--default-width); /* Default for very small screens */
+  max-width: 793.6px; /* Max width */
+}
+
+@media (min-width: 640px) {
+  .signup-container {
+    width: var(--small-width); /* Small screens */
+  }
+}
+
+@media (min-width: 768px) {
+  .signup-container {
+    width: var(--medium-width); /* Medium screens */
+  }
+}
+
+@media (min-width: 1024px) {
+  .signup-container {
+    width: var(--large-width); /* Large screens */
+  }
+}
+
+@media (min-width: 1280px) {
+  .signup-container {
+    width: var(--xlarge-width); /* Extra large screens */
+  }
+}
+
+@media (min-width: 1536px) {
+  .signup-container {
+    width: var(--xxlarge-width); /* 2X large screens and above */
+  }
+}

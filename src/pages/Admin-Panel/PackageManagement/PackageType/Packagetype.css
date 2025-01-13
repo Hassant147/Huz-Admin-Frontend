@@ -1,0 +1,21 @@
+.custom-checkbox .checkmark {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    border-radius: 50%;
+    border: 1px solid #00936C;
+    background-color: transparent;
+    position: relative;
+}
+.custom-checkbox input:checked + .checkmark::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #00936C;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}

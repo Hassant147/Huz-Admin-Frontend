@@ -1,0 +1,162 @@
+[
+  {
+    "value": "",
+    "label": "Select bank name",
+    "logo": ""
+  },
+  {
+    "value": "AlBaraka",
+    "label": "Al Baraka Bank Pakistan Limited",
+    "logo": "/BANK/AlBaraka.png"
+  },
+  {
+    "value": "Askari",
+    "label": "Askari Bank Limited",
+    "logo": "/BANK/Askari.png"
+  },
+  {
+    "value": "Alfalah",
+    "label": "Bank Alfalah Limited",
+    "logo": "/BANK/Alfalah.png"
+  },
+  {
+    "value": "AlHabib",
+    "label": "Bank Al Habib Limited",
+    "logo": "/BANK/AlHabib.png"
+  },
+  {
+    "value": "Faysal",
+    "label": "Faysal Bank Limited",
+    "logo": "/BANK/FaysalBank.png"
+  },
+  {
+    "value": "HBL",
+    "label": "Habib Bank Limited (HBL)",
+    "logo": "/BANK/HBL.png"
+  },
+  {
+    "value": "HabibMetropolitan",
+    "label": "Habib Metropolitan Bank Limited",
+    "logo": "/BANK/HabibMetropolitan.png"
+  },
+  {
+    "value": "JS",
+    "label": "JS Bank Limited",
+    "logo": "/BANK/jsBank.png"
+  },
+  {
+    "value": "MCB",
+    "label": "MCB Bank Limited",
+    "logo": "/BANK/MCBBank.png"
+  },
+  {
+    "value": "NBP",
+    "label": "National Bank of Pakistan (NBP)",
+    "logo": "/BANK/NationalBankofPakistan(NBP).png"
+  },
+  {
+    "value": "Samba",
+    "label": "Samba Bank Limited",
+    "logo": "/BANK/SambaBank.png"
+  },
+  {
+    "value": "Silkbank",
+    "label": "Silkbank Limited",
+    "logo": "/BANK/SilkBank.png"
+  },
+  {
+    "value": "Sindh",
+    "label": "Sindh Bank Limited",
+    "logo": "/BANK/SindhBank.png"
+  },
+  {
+    "value": "Soneri",
+    "label": "Soneri Bank Limited",
+    "logo": "/BANK/SoneriBank.png"
+  },
+  {
+    "value": "StandardChartered",
+    "label": "Standard Chartered Bank (Pakistan) Limited",
+    "logo": "/BANK/StandardChartered.png"
+  },
+  {
+    "value": "Summit",
+    "label": "Summit Bank Limited",
+    "logo": "/BANK/SummitBank.png"
+  },
+  {
+    "value": "BoK",
+    "label": "The Bank of Khyber (BoK)",
+    "logo": "/BANK/BankofKhyber.png"
+  },
+  {
+    "value": "BoP",
+    "label": "The Bank of Punjab (BoP)",
+    "logo": "/BANK/bankOfPunjab.png"
+  },
+  {
+    "value": "UBL",
+    "label": "United Bank Limited (UBL)",
+    "logo": "/BANK/UBL.png"
+  },
+  {
+    "value": "BankIslami",
+    "label": "Bank Islami Pakistan Limited",
+    "logo": "/BANK/BankIslamic.png"
+  },
+  {
+    "value": "DubaiIslamic",
+    "label": "Dubai Islamic Bank Pakistan Limited",
+    "logo": "/BANK/dubaiislamic.png"
+  },
+  {
+    "value": "MCBIslamic",
+    "label": "MCB Islamic Bank Limited",
+    "logo": "/BANK/MCBBank.png"
+  },
+  {
+    "value": "Meezan",
+    "label": "Meezan Bank Limited",
+    "logo": "/BANK/mezanBank.png"
+  },
+  {
+    "value": "CitiBank",
+    "label": "CitiBank N.A.",
+    "logo": "/BANK/citiBank.png"
+  },
+  {
+    "value": "DeutscheBank",
+    "label": "Deutsche Bank AG",
+    "logo": "/BANK/DeutscheBank.png"
+  },
+  {
+    "value": "ICBC",
+    "label": "Industrial and Commercial Bank of China (ICBC)",
+    "logo": "/BANK/ICBC.png"
+  },
+  {
+    "value": "ZTBL",
+    "label": "Zarai Taraqiati Bank Limited (ZTBL)",
+    "logo": "/BANK/ZTBL.png"
+  },
+  {
+    "value": "PPCBL",
+    "label": "Punjab Provincial Cooperative Bank Limited (PPCBL)",
+    "logo": "/BANK/PPCBL.png"
+  },
+  {
+    "value": "SME",
+    "label": "SME Bank Limited",
+    "logo": "/BANK/SME.png"
+  },
+  {
+    "value": "FirstMicroFinance",
+    "label": "The First MicroFinance Bank Limited",
+    "logo": "/BANK/FirstMicroFinance.png"
+  },
+  {
+    "value": "PMRC",
+    "label": "Pakistan Mortgage Refinance Company (PMRC)",
+    "logo": "/BANK/PMRC.png"
+  }
+]

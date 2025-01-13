@@ -1,0 +1,28 @@
+/* Example CSS */
+audio::-webkit-media-controls-panel {
+    background-color: transparent;
+  }
+  
+  audio::-webkit-media-controls-play-button {
+    color: #00936c; /* Color of the play button */
+  }
+  
+  audio::-webkit-media-controls-volume-slider {
+    color: #00936c; /* Color of the volume slider */
+  }
+  
+  audio::-webkit-media-controls-seek-back-button,
+  audio::-webkit-media-controls-seek-forward-button {
+    color: #00936c; /* Color of the seek buttons */
+  }
+  
+  /* For Firefox */
+  audio::-moz-range-track {
+    background-color: #00936c; /* Color of the audio progress bar */
+  }
+  
+  /* For other browsers */
+  audio {
+    color: #00936c; /* Color of the audio progress bar */
+  }
+  

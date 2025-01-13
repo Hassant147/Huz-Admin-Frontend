@@ -1,0 +1,30 @@
+.react-flags-select .flag-select__btn {
+  border: none; /* Remove border */
+  outline: none;
+}
+
+.ReactFlagsSelect-module_selectBtn {
+  border: none; /* Remove border */
+  outline: none;
+}
+
+.ReactFlagsSelect-module_selectBtn__19wW7 {
+  border: none;
+}
+
+/* .react-flags-select .flag-select__option {
+    text-align: center; 
+  }
+   */
+.__dropdown-indicator{
+  /* display: none; */
+  color: red;
+}
+
+.ReactFlagsSelect-module_selectBtn__19wW7:after {
+  display: none;
+}
+
+.ReactFlagsSelect-module_selectBtn__19wW7[aria-expanded="true"]:after{
+  display: none;
+}

@@ -1,0 +1,53 @@
+/* Define base styles */
+.container {
+    padding: 16px;
+    max-width: 100%;
+}
+  
+/* Ensure padding for #card-list-container is set to 0 */
+#card-list-container {
+    padding: 0 !important;
+}
+  
+/* Responsive styles */
+@media (min-width: 640px) {
+    .container {
+      padding: 40px;
+    }
+}
+  
+@media (min-width: 768px) {
+    .container {
+      padding: 44px;
+    }
+    .card {
+      flex: 1 1 48%;
+    }
+}
+  
+@media (min-width: 1024px) {
+    .container {
+      padding: 48px;
+    }
+    .card {
+      flex: 1 1 30%;
+    }
+}
+  
+@media (min-width: 1280px) {
+    .container {
+      padding: 52px;
+    }
+    .card {
+      flex: 1 1 24%;
+    }
+}
+  
+@media (min-width: 1536px) {
+    .container {
+      padding: 56px;
+    }
+    .card {
+      flex: 1 1 20%;
+    }
+}

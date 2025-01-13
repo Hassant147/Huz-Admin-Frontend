@@ -1,0 +1,25 @@
+.PhoneInputCountry {
+  background: #ffff;
+  border-radius: 5px;
+  width: 85px;
+  justify-content: center;
+  height: 38px;
+  border: 2px solid #dedddd;
+}
+
+.PhoneInputInput {
+  background: #ffff;
+  border-radius: 5px;
+  width: full;
+  justify-content: center;
+  padding-left: 10px;
+  height: 38px;
+  border: 2px solid #dedddd;
+}
+
+.PhoneInputCountrySelectArrow{
+    width: 9px;
+    height: 9px; 
+    margin-left: 12px;
+    margin-bottom: 5px;
+}
