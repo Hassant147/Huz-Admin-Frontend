@@ -5,9 +5,7 @@ import {
   getPartnerAllComplaints,
   updatePartnerAllComplaintsStatus,
 } from "../../../utility/Api";
-import Header from "../../../components/Headers/HeaderForAdminPanel";
-import NavigationBar from "../../../components/NavigationBarForContent";
-import Footer from "../../../components/Footers/FooterForLoggedIn";
+import AdminPanelLayout from "../../../components/layout/AdminPanelLayout";
 import Loader from "../../../components/loader";
 import bannerimg from "../../../assets/bookingbg.svg";
 import openIcon from "../../../assets/complaints/open.png";
@@ -128,9 +126,7 @@ const Complaints = () => {
   const total = Object.values(complaintCounts).reduce((a, b) => a + b, 0);
 
   return (
-    <div>
-      <Header />
-      <NavigationBar />
+    <AdminPanelLayout useContainer={false} mainClassName="py-0">
       <Toaster className="top-right" reverseOrder={false} />
       <div className="min-h-screen text-[#4b465c]">
         <div className="bg-[#bcdfd7]" style={{ backgroundImage: `url(${bannerimg})`, backgroundSize: "cover", backgroundRepeat: "no-repeat" }}>
@@ -277,9 +273,7 @@ const Complaints = () => {
           </div>
         </div>
       </div>
-
-      <Footer />
-    </div>
+    </AdminPanelLayout>
   );
 };
 

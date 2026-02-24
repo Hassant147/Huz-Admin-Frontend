@@ -1,38 +1,52 @@
 import React from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Action from "./Action";
-import BackButton from "../../../../../components/BackButton";
-import BookingDetailsComponent from './BookingDetailsComponent';
-// import PackageDetails from "./PackageDetails";
-// import BookingInfo from "./BookingInfo";
-// import Action from "./Action/Action";
-// import TransactionDetails from "./TransactionDetails"; // Import the new TransactionDetails component
-// import CompanyDetail from "./CompanyDetail";
+import BookingDetailsComponent from "./BookingDetailsComponent";
+import { AppButton, AppCard, AppEmptyState } from "../../../../../components/ui";
+import errorIcon from "../../../../../assets/error.svg";
+import SuperAdminModuleShell from "../../../components/SuperAdminModuleShell";
 
 const BookingDetailsPage = () => {
   const location = useLocation();
-  const { booking } = location.state; // Extract the booking data from the location state
-  console.log("booking:", booking);
+  const navigate = useNavigate();
+  const booking = location.state?.booking;
+
+  if (!booking) {
+    return (
+      <SuperAdminModuleShell
+        title="Partner Booking Details"
+        subtitle="Review partner payment transfer request details."
+      >
+        <AppCard>
+          <AppEmptyState
+            icon={<img src={errorIcon} alt="" className="h-6 w-6" />}
+            title="Booking record not loaded"
+            message="Open a booking from partner amounts list to continue."
+            action={
+              <AppButton size="sm" onClick={() => navigate("/approve-partners-amounts")}>
+                Go to Partner Amounts
+              </AppButton>
+            }
+          />
+        </AppCard>
+      </SuperAdminModuleShell>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center">
-      <div className="w-[90%] mx-auto ">
-        <BackButton />
-        <div className="flex lg:flex-row flex-col lg:h-full mb-10 py-7">
-          <div className="lg:w-[25%] space-y-6">
-            <Sidebar booking={booking} />
-          </div>
-          <div className="lg:w-2/3 lg:px-4 space-y-6 mt-6 lg:mt-0 lg:space-y-4 flex-grow">
-            {/* <PackageDetails booking={booking} />
-            <BookingInfo booking={booking} />
-            <CompanyDetail booking={booking} />
-            <TransactionDetails booking={booking} /> */}
-            <BookingDetailsComponent />
-            <Action booking={booking} />
-          </div>
+    <SuperAdminModuleShell
+      title="Partner Booking Details"
+      subtitle="Validate package details and settlement proof before transfer."
+    >
+      <div className="grid gap-4 lg:grid-cols-[340px_minmax(0,1fr)]">
+        <Sidebar booking={booking} />
+        <div className="app-content-stack">
+          <BookingDetailsComponent booking={booking} />
+          <Action booking={booking} />
         </div>
       </div>
-    </div>
+    </SuperAdminModuleShell>
   );
 };
 

@@ -1,163 +1,182 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate from react-router-dom
-import { fetchPendingPartnerPayments } from "../../../../utility/Super-Admin-Api"; // Import your API function
-import NoContent from "../../../../components/NoContent"; // Import NoContent component
-import BackButton from "../../../../components/BackButton";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { fetchPendingPartnerPayments } from "../../../../utility/Super-Admin-Api";
+import { AppButton, AppCard, AppEmptyState, AppSectionHeader } from "../../../../components/ui";
+import errorIcon from "../../../../assets/error.svg";
+import SuperAdminModuleShell from "../../components/SuperAdminModuleShell";
+import SuperAdminPagination from "../../components/SuperAdminPagination";
+import SuperAdminMetricCard from "../../components/SuperAdminMetricCard";
+import SuperAdminInfoTile from "../../components/SuperAdminInfoTile";
+import usePaginatedRecords from "../../components/usePaginatedRecords";
+import Loader from "../../../../components/loader";
+import {
+  formatCurrencyPKR,
+  formatDate,
+  withFallback,
+} from "../../components/superAdminFormatters";
+
+const ITEMS_PER_PAGE = 6;
 
 const ApprovePartnerAmountsPage = () => {
-  const [bookings, setBookings] = useState([]); // State to store the fetched bookings
-  const [loading, setLoading] = useState(true); // State for loading status
-  const [error, setError] = useState(null); // State for error handling
-  const [currentPage, setCurrentPage] = useState(1); // State for current page
-  const itemsPerPage = 5; // Number of items per page
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-  const navigate = useNavigate(); // Initialize useNavigate hook
+  const { currentPage, totalPages, currentItems, onPageChange } = usePaginatedRecords(
+    bookings,
+    ITEMS_PER_PAGE
+  );
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const { status, data, error } = await fetchPendingPartnerPayments();
+  const loadPartnerPayments = useCallback(async () => {
+    setLoading(true);
+    setError("");
 
-      if (status === 200 && data.length > 0) {
-        setBookings(data);
-      } else if (status === 404) {
-        setBookings([]);
-      } else {
-        setError(error || "An error occurred while fetching data.");
-      }
-      setLoading(false);
-    };
+    const { status, data, error: requestError } = await fetchPendingPartnerPayments();
 
-    fetchData();
+    if (status === 200 && Array.isArray(data)) {
+      setBookings(data);
+    } else if (status === 404) {
+      setBookings([]);
+    } else {
+      setBookings([]);
+      setError(requestError || "An error occurred while fetching data.");
+    }
+
+    setLoading(false);
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-[80vh]">
-        <div className="loader"></div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    loadPartnerPayments();
+  }, [loadPartnerPayments]);
 
-  if (error) {
-    return <div className="text-center text-red-500">Error: {error}</div>;
-  }
+  const totalReceivable = useMemo(() => {
+    return bookings.reduce((sum, booking) => sum + Number(booking.receivable_amount || 0), 0);
+  }, [bookings]);
 
-  // Calculate the index range for the current page
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = bookings.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPending = useMemo(() => {
+    return bookings.reduce((sum, booking) => sum + Number(booking.pending_amount || 0), 0);
+  }, [bookings]);
 
-  // Function to handle page changes
-  const handlePageChange = (pageNumber) => {
-    setCurrentPage(pageNumber);
-  };
-
-  // Function to handle clicking on "Action" button
-  const handleActionClick = (booking) => {
-    navigate("/booking-details-for-partners", { state: { booking } });
-  };
-
-  // Calculate total pages
-  const totalPages = Math.ceil(bookings.length / itemsPerPage);
+  const totalProcessed = useMemo(() => {
+    return bookings.reduce((sum, booking) => sum + Number(booking.processed_amount || 0), 0);
+  }, [bookings]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="w-[90%] mx-auto">
-        <BackButton />
-        {bookings.length > 0 ? (
-          <>
-            <div className="grid grid-cols-1 gap-6 w-full">
-              {currentItems.map((booking, index) => (
-                <div
-                  key={index}
-                  className="flex flex-col lg:flex-row items-center lg:items-start p-4 bg-white rounded-lg shadow-sm border border-gray-200 w-full"
-                >
-                  {/* Partner Details */}
-                  <div className="w-full lg:w-[20%] mb-4 lg:mb-0">
-                    <p className="text-xs text-gray-500">Partner name</p>
-                    <h2 className="text-sm text-gray-700">
-                      {booking.partner_name || "Name not provided"}
-                    </h2>
-                  </div>
+    <SuperAdminModuleShell
+      title="Partner Amounts"
+      subtitle="Review partner receivable and transfer settlement requests."
+      showBackButton={false}
+    >
+      {loading ? (
+        <AppCard className="min-h-[320px] flex items-center justify-center">
+          <Loader />
+        </AppCard>
+      ) : error ? (
+        <AppCard>
+          <AppEmptyState
+            icon={<img src={errorIcon} alt="" className="h-6 w-6" />}
+            title="Unable to load partner payments"
+            message={error}
+            action={
+              <AppButton size="sm" onClick={loadPartnerPayments}>
+                Retry
+              </AppButton>
+            }
+          />
+        </AppCard>
+      ) : bookings.length > 0 ? (
+        <>
+          <div className="app-grid-3">
+            <SuperAdminMetricCard
+              title="Requests"
+              value={bookings.length.toLocaleString()}
+              hint="Partner transfer records"
+            />
+            <SuperAdminMetricCard
+              title="Total Receivable"
+              value={formatCurrencyPKR(totalReceivable)}
+              hint={`Pending ${formatCurrencyPKR(totalPending)}`}
+            />
+            <SuperAdminMetricCard
+              title="Processed Amount"
+              value={formatCurrencyPKR(totalProcessed)}
+              hint={`${currentItems.length} records on current page`}
+            />
+          </div>
 
-                  {/* Booking Number */}
-                  <div className="w-full lg:w-[15%] mb-4 lg:mb-0 lg:border-x lg:text-center">
-                    <p className="text-xs text-gray-500">Booking Number</p>
-                    <a href="#" className="text-blue-500 underline">
-                      {booking.booking_number}
-                    </a>
-                  </div>
+          <AppCard className="border-slate-200">
+            <AppSectionHeader
+              title="Partner Receivable Requests"
+              subtitle={`Showing ${currentItems.length} of ${bookings.length} records`}
+            />
+          </AppCard>
 
-                  {/* Created Date */}
-                  <div className="w-full lg:w-[15%] mb-4 lg:mb-0 lg:text-center">
-                    <p className="text-xs text-gray-500">Created date</p>
-                    <p className="text-sm text-gray-700">
-                      {new Date(booking.create_date).toLocaleDateString()}
-                    </p>
-                  </div>
+          <div className="app-content-stack">
+            {currentItems.map((booking) => (
+              <AppCard
+                key={`${booking.partner_session_token}-${booking.booking_number}`}
+                className="border-slate-200"
+              >
+                <article className="app-content-stack">
+                  <header className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-ink-300">
+                        Booking {booking.booking_number}
+                      </p>
+                      <h3 className="mt-1 text-base font-semibold text-ink-900">
+                        {withFallback(booking.partner_name, "Partner")}
+                      </h3>
+                    </div>
 
-                  {/* Receivable Amount */}
-                  <div className="w-full lg:w-[15%] mb-4 lg:mb-0 lg:border-x lg:text-center">
-                    <p className="text-xs text-gray-500">Receivable amount</p>
-                    <p className="text-sm text-[#00936C]">
-                      PKR {booking.receivable_amount}
-                    </p>
-                  </div>
-
-                  {/* Pending Amount */}
-                  <div className="w-full lg:w-[15%] mb-4 lg:mb-0 lg:text-center">
-                    <p className="text-xs text-gray-500">Pending amount</p>
-                    <p className="text-sm text-gray-700">
-                      PKR {booking.pending_amount}
-                    </p>
-                  </div>
-
-                  {/* Processed Amount */}
-                  <div className="w-full lg:w-[15%] mb-4 lg:mb-0 lg:border-l lg:text-center">
-                    <p className="text-xs text-gray-500">Processed amount</p>
-                    <p className="text-sm text-gray-700">
-                      PKR {booking.processed_amount}
-                    </p>
-                  </div>
-
-                  {/* Action Button */}
-                  <div className="w-full lg:w-auto text-right lg:text-left lg:flex-1 items-center justify-end space-x-2 lg:space-x-16 lg:flex">
-                    <button
-                      className="text-[#00936C] font-semibold border border-[#00936C] rounded px-2 lg:px-3 py-1 hover:bg-[#00936C] hover:text-white"
-                      onClick={() => handleActionClick(booking)}
+                    <AppButton
+                      size="sm"
+                      onClick={() =>
+                        navigate("/booking-details-for-partners", { state: { booking } })
+                      }
                     >
-                      Action
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+                      Review
+                    </AppButton>
+                  </header>
 
-            {/* Pagination */}
-            <div className="flex justify-end mt-8">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (pageNumber) => (
-                  <button
-                    key={pageNumber}
-                    className={`px-3 py-1 mx-1 rounded ${
-                      currentPage === pageNumber
-                        ? "bg-[#00936C] text-white"
-                        : "bg-gray-200 text-gray-700"
-                    }`}
-                    onClick={() => handlePageChange(pageNumber)}
-                  >
-                    {pageNumber}
-                  </button>
-                )
-              )}
-            </div>
-          </>
-        ) : (
-          <NoContent />
-        )}
-      </div>
-    </div>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <SuperAdminInfoTile label="Created On" value={formatDate(booking.create_date)} />
+                    <SuperAdminInfoTile
+                      label="Receivable"
+                      value={formatCurrencyPKR(booking.receivable_amount)}
+                    />
+                    <SuperAdminInfoTile
+                      label="Pending"
+                      value={formatCurrencyPKR(booking.pending_amount)}
+                    />
+                    <SuperAdminInfoTile
+                      label="Processed"
+                      value={formatCurrencyPKR(booking.processed_amount)}
+                    />
+                  </div>
+                </article>
+              </AppCard>
+            ))}
+          </div>
+
+          <SuperAdminPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
+          />
+        </>
+      ) : (
+        <AppCard>
+          <AppEmptyState
+            icon={<img src={errorIcon} alt="" className="h-6 w-6" />}
+            title="No partner payment records"
+            message="Pending partner payment requests will appear here."
+          />
+        </AppCard>
+      )}
+    </SuperAdminModuleShell>
   );
 };
 
 export default ApprovePartnerAmountsPage;
+

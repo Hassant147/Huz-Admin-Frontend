@@ -3,9 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useDropzone } from "react-dropzone";
 import logo from "../../../../assets/uploadlogo.svg";
 import trashIcon from "../../../../assets/trashIcon.svg";
-import Header from "../../../../components/Headers/HeaderForAdminPanel";
-import NavigationBar from "../../../../components/NavigationBarForContent";
-import Footer from "../../../../components/Footers/FooterForLoggedIn";
+import AdminPanelLayout from "../../../../components/layout/AdminPanelLayout";
 import Select from "react-select";
 
 import {
@@ -36,7 +34,11 @@ const IndTransportForm = ({ title, localStorageKey }) => {
       : [],
     files: [],
     filePreviews: initialFormData.vehicle_photos
-      ? [{ preview: `http://13.213.42.27${initialFormData.vehicle_photos}` }]
+      ? [
+          {
+            preview: `${process.env.REACT_APP_API_BASE_URL}${initialFormData.vehicle_photos}`,
+          },
+        ]
       : [],
   });
 
@@ -225,10 +227,12 @@ const IndTransportForm = ({ title, localStorageKey }) => {
   };
 
   return (
-    <div>
-      <Header />
-      <NavigationBar />
-      <div className="flex flex-col w-[85%] mx-auto lg:flex-row lg:space-x-6 font-sans my-10">
+    <AdminPanelLayout
+      title="Transport Package Enrollment"
+      subtitle="Provide complete transport details to publish your package."
+      mainClassName="py-5 bg-[#f6f6f6]"
+    >
+      <div className="flex flex-col lg:flex-row lg:space-x-6 font-sans my-2 mb-10">
         <div className="w-full">
           <div>
             <h3 className="text-2xl font-medium mb-1 text-gray-600">
@@ -810,8 +814,7 @@ const IndTransportForm = ({ title, localStorageKey }) => {
           </p>
         </div>
       </div>
-      <Footer />
-    </div>
+    </AdminPanelLayout>
   );
 };
 

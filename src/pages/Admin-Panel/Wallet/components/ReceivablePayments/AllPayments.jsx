@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { fetchReceivablePayments } from "../../../../../utility/Api";
 import Info from './Info'; // Import Info component from Info file
-import Header from "../../../../../components/Headers/HeaderForAdminPanel";
-import NavigationBar from "../../../../../components/NavigationBarForContent";
-import Footer from "../../../../../components/Footers/FooterForLoggedIn";
+import AdminPanelLayout from "../../../../../components/layout/AdminPanelLayout";
 import AccountStatementImage from "../../../../../assets/AccountsStatement.svg"; // Import the image
 import Loader from "../../../../../components/loader"; // Import the loader
 
@@ -39,10 +37,12 @@ const AllPayments = () => {
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
-      <NavigationBar />
-      <div className="text-[#4B465C] my-4 w-[90%] mx-auto flex-grow">
+    <AdminPanelLayout
+      title="All Receivable Payments"
+      subtitle="Track package-wise receivable, pending, and processed amounts."
+      mainClassName="py-5"
+    >
+      <div className="text-[#4B465C] my-1 flex-grow">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
           <h2 className="text-lg md:text-xl font-semibold text-[#4B465C] opacity-80 font-kd mb-2 sm:mb-0">
             All Receivable Payments
@@ -108,8 +108,7 @@ const AllPayments = () => {
           ))
         )}
       </div>
-      <Footer />
-    </div>
+    </AdminPanelLayout>
   );
 };
 

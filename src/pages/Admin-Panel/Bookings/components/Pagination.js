@@ -1,4 +1,5 @@
 import React from "react";
+import { AppButton } from "../../../../components/ui";
 
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   const handleClick = (page) => {
@@ -9,35 +10,39 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
     const pageNumbers = [];
     for (let i = 1; i <= totalPages; i++) {
       pageNumbers.push(
-        <button
+        <AppButton
           key={i}
+          variant={currentPage === i ? "primary" : "outline"}
+          size="sm"
+          className="min-w-[40px] rounded-full"
           onClick={() => handleClick(i)}
-          className={`px-5 py-1 mx-1 rounded ${currentPage === i ? "bg-[#00936C] text-white" : "bg-gray-200"}`}
         >
           {i}
-        </button>
+        </AppButton>
       );
     }
     return pageNumbers;
   };
 
   return (
-    <div className="flex justify-end mt-4">
-      <button
+    <div className="flex flex-wrap justify-end gap-2">
+      <AppButton
+        variant="outline"
+        size="sm"
         onClick={() => handleClick(currentPage - 1)}
         disabled={currentPage === 1}
-        className="px-5 rounded mx-1 bg-gray-200"
       >
         Prev
-      </button>
+      </AppButton>
       {renderPageNumbers()}
-      <button
+      <AppButton
+        variant="outline"
+        size="sm"
         onClick={() => handleClick(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="px-5 rounded mx-1 bg-gray-200"
       >
         Next
-      </button>
+      </AppButton>
     </div>
   );
 };

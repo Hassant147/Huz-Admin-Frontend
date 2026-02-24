@@ -1,30 +1,13 @@
-.react-flags-select .flag-select__btn {
-  border: none; /* Remove border */
-  outline: none;
-}
-
-.ReactFlagsSelect-module_selectBtn {
-  border: none; /* Remove border */
-  outline: none;
-}
-
+.react-flags-select .flag-select__btn,
+.ReactFlagsSelect-module_selectBtn,
 .ReactFlagsSelect-module_selectBtn__19wW7 {
   border: none;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
 }
 
-/* .react-flags-select .flag-select__option {
-    text-align: center; 
-  }
-   */
-.__dropdown-indicator{
-  /* display: none; */
-  color: red;
-}
-
-.ReactFlagsSelect-module_selectBtn__19wW7:after {
+.ReactFlagsSelect-module_selectBtn__19wW7:after,
+.ReactFlagsSelect-module_selectBtn__19wW7[aria-expanded="true"]:after {
   display: none;
-}
-
-.ReactFlagsSelect-module_selectBtn__19wW7[aria-expanded="true"]:after{
-  display: none;
 }

@@ -1,90 +1,107 @@
 import React, { useState } from "react";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
-import { confirmBookingPayment } from "../../../../../../utility/Super-Admin-Api"; // Import the API function
-import Loader from "../../../../../../components/loader"; // Import your Loader component
+import { confirmBookingPayment } from "../../../../../../utility/Super-Admin-Api";
+import { AppButton, AppCard, AppSectionHeader } from "../../../../../../components/ui";
+
+const RESPONSE_MESSAGE_MAP = {
+  400: "Bad request: missing or invalid input data.",
+  401: "Unauthorized: admin permissions required.",
+  404: "Booking details not found.",
+  409: "Only bookings with paid status can be confirmed.",
+};
 
 const Action = ({ booking }) => {
-  const [isSelect, setIsSelect] = useState("Accept");
-  const [isLoading, setIsLoading] = useState(false); // State to track API call status
-  const navigate = useNavigate(); // Hook to navigate programmatically
+  const [decision, setDecision] = useState("accept");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setIsSelect(e.target.value);
-  };
-
-  const handleSubmit = async () => {
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!booking) {
+      toast.error("Booking data is not available.");
+      return;
+    }
     const { user_session_token, booking_number } = booking;
+    setIsSubmitting(true);
 
-    setIsLoading(true); // Set loading state to true
-
-    if (isSelect === "Accept") {
+    if (decision === "accept") {
       const response = await confirmBookingPayment(user_session_token, booking_number);
-
-      // Handle different response statuses
       if (response.status === 200) {
-        toast.success("Booking status updated successfully!");
-
-        // Delay navigation to allow the toast to show
+        toast.success("Booking status updated successfully.");
         setTimeout(() => {
-          navigate(-1); // Navigate back to the previous page
-        }, 1000); // 1 second delay
-
-      } else if (response.status === 400) {
-        toast.error("Bad Request: Missing or invalid input data.");
-      } else if (response.status === 401) {
-        toast.error("Unauthorized: Admin permissions required.");
-      } else if (response.status === 404) {
-        toast.error("Not Found: Booking or user detail not found.");
-      } else if (response.status === 409) {
-        toast.warning("Conflict: Only bookings with 'Paid' status can be confirmed.");
+          navigate(-1);
+        }, 900);
       } else {
-        toast.error("Internal Server Error: Something went wrong.");
+        toast.error(RESPONSE_MESSAGE_MAP[response.status] || "Failed to update booking status.");
       }
     } else {
-      toast.warning("Booking rejected. No changes made.");
+      toast.info("Booking marked as rejected. No approval call was sent.");
+      setTimeout(() => navigate(-1), 700);
     }
 
-    setIsLoading(false); // Set loading state to false after API call
+    setIsSubmitting(false);
   };
 
   return (
-    <div className="space-y-4">
-      <ToastContainer position="top-right" autoClose={5000} hideProgressBar />
-      <div className="bg-white p-6 rounded-md text-[20px] text-gray-500 font-semibold space-y-4">
-        <p>Your Action</p>
-        <p className="text-[16px]">Which kind of option you want to choose?</p>
-        <div className="flex items-center gap-20">
-          <div className="flex items-center gap-2" onChange={handleChange}>
-            <input
-              type="radio"
-              value="Accept"
-              checked={isSelect === "Accept"}
-              onChange={handleChange}
-            />
-            <label className="text-[13px]">Accept</label>
-          </div>
-          <div className="flex items-center gap-2" onChange={handleChange}>
-            <input
-              type="radio"
-              value="Reject"
-              checked={isSelect === "Reject"}
-              onChange={handleChange}
-            />
-            <label className="text-[13px]">Reject</label>
-          </div>
+    <AppCard className="border-slate-200">
+      <form onSubmit={handleSubmit} className="app-content-stack">
+        <AppSectionHeader
+          title="Review Decision"
+          subtitle="Approve booking payment verification or reject this request."
+        />
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          <DecisionTile
+            label="Approve booking payment"
+            checked={decision === "accept"}
+            onSelect={() => setDecision("accept")}
+          />
+          <DecisionTile
+            label="Reject this request"
+            checked={decision === "reject"}
+            onSelect={() => setDecision("reject")}
+          />
         </div>
-      </div>
-      <button
-        className="w-full bg-[#00936c] text-white text-center p-3 rounded-md flex items-center justify-center"
-        onClick={handleSubmit}
-        disabled={isLoading} // Disable the button when loading
-      >
-        {isLoading ? <Loader /> : "Submit Your Decision"} {/* Show loader or button text */}
-      </button>
-    </div>
+
+        <div className="flex justify-end">
+          <AppButton
+            type="submit"
+            className="min-w-[190px]"
+            loading={isSubmitting}
+            loadingLabel="Applying..."
+          >
+            Submit Decision
+          </AppButton>
+        </div>
+      </form>
+    </AppCard>
   );
 };
 
-export default Action;
+const DecisionTile = ({ label, checked, onSelect }) => {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`rounded-xl border px-3 py-3 text-left text-sm font-semibold transition ${
+        checked
+          ? "border-brand-500 bg-brand-50 text-brand-700"
+          : "border-slate-200 bg-white text-ink-700 hover:border-brand-200 hover:bg-slate-50"
+      }`}
+    >
+      <span className="flex items-center gap-2">
+        <span
+          className={`h-4 w-4 rounded-full border ${
+            checked ? "border-brand-600 bg-brand-500" : "border-slate-400"
+          }`}
+          aria-hidden="true"
+        />
+        {label}
+      </span>
+    </button>
+  );
+};
+
+export default Action;

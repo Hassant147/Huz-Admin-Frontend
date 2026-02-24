@@ -1,7 +1,17 @@
 import axios from "axios";
 
 const authHeader = `${process.env.REACT_APP_AUTH_TOKEN}`;
-const baseURL = process.env.REACT_APP_API_BASE_URL;
+const LOCAL_FALLBACK_API_URL = "http://127.0.0.1:8000";
+
+const resolveApiBaseURL = () => {
+  const configuredURL = `${process.env.REACT_APP_API_BASE_URL || ""}`.trim();
+  const fallbackURL = LOCAL_FALLBACK_API_URL;
+  const normalizedBaseURL = configuredURL || fallbackURL;
+  return normalizedBaseURL.replace(/\/+$/, "");
+};
+
+const baseURL = resolveApiBaseURL();
+const localFallbackBaseURL = LOCAL_FALLBACK_API_URL.replace(/\/+$/, "");
 
 const config = {
   headers: {
@@ -15,10 +25,65 @@ const apiClient = axios.create({
   ...config,
 });
 
+const shouldRetryWithLocalFallback = (error) => {
+  if (baseURL === localFallbackBaseURL) {
+    return false;
+  }
+  if (error?.response) {
+    return false;
+  }
+
+  const errorCode = error?.code || "";
+  return (
+    errorCode === "ERR_NETWORK" ||
+    errorCode === "ECONNABORTED" ||
+    error?.message === "Network Error"
+  );
+};
+
+const requestWithFallback = async (requestConfig) => {
+  try {
+    return await apiClient.request(requestConfig);
+  } catch (error) {
+    if (!shouldRetryWithLocalFallback(error)) {
+      throw error;
+    }
+
+    return axios.request({
+      ...requestConfig,
+      baseURL: localFallbackBaseURL,
+      headers: {
+        ...config.headers,
+        ...(requestConfig?.headers || {}),
+      },
+    });
+  }
+};
+
+const normalizePendingAccountStatus = (accountStatus) => {
+  const normalizedStatus = `${accountStatus || ""}`.trim().toLowerCase();
+  if (normalizedStatus === "underreview" || normalizedStatus === "pending") {
+    return "Pending";
+  }
+  return accountStatus;
+};
+
+const normalizePendingCompany = (company = {}) => ({
+  ...company,
+  account_status: normalizePendingAccountStatus(company.account_status),
+  partner_type_and_detail: company.partner_type_and_detail || {},
+  partner_service_detail: company.partner_service_detail || {},
+  mailing_detail: company.mailing_detail || {},
+});
+
 export const checkUserExistence = async (phoneNumber) => {
   try {
-    const response = await apiClient.post("/common/is_user_exist/", {
-      phone_number: phoneNumber,
+    const response = await requestWithFallback({
+      method: "post",
+      url: "/common/is_user_exist/",
+      data: {
+        phone_number: phoneNumber,
+      },
     });
 
     // Return response status and data to handle it in the component
@@ -40,13 +105,18 @@ export const checkUserExistence = async (phoneNumber) => {
 
 export const fetchPendingCompanies = async () => {
   try {
-    const response = await apiClient.get(
-      "/management/fetch_all_pending_companies/"
-    );
+    const response = await requestWithFallback({
+      method: "get",
+      url: "/management/fetch_all_pending_companies/",
+    });
+
+    const pendingCompanies = Array.isArray(response.data)
+      ? response.data.map(normalizePendingCompany)
+      : [];
 
     return {
       status: response.status,
-      data: response.data,
+      data: pendingCompanies,
     };
   } catch (error) {
     if (error.response) {
@@ -63,9 +133,10 @@ export const fetchPendingCompanies = async () => {
 
 export const fetchSalesDirectors = async () => {
   try {
-    const response = await apiClient.get(
-      "/management/fetch_all_sale_directors/"
-    );
+    const response = await requestWithFallback({
+      method: "get",
+      url: "/management/fetch_all_sale_directors/",
+    });
     return {
       status: response.status,
       data: response.data,
@@ -89,23 +160,28 @@ export const updateCompanyStatus = async (
   session_token = ""
 ) => {
   try {
-    const response = await apiClient.put(
-      "/management/approved_or_reject_company/",
-      {
+    const response = await requestWithFallback({
+      method: "put",
+      url: "/management/approved_or_reject_company/",
+      data: {
         partner_session_token,
         account_status,
         session_token, // Send the sales director session token if provided
-      }
-    );
+      },
+    });
     return {
       status: response.status,
       message: response.data.message,
+      account_status: response.data.account_status,
     };
   } catch (error) {
     if (error.response) {
       return {
         status: error.response.status,
-        error: error.response.data.message,
+        error:
+          error.response.data?.message ||
+          error.response.data?.detail ||
+          "Failed to update company profile status.",
       };
     } else {
       console.error("Error updating company status:", error);
@@ -116,9 +192,10 @@ export const updateCompanyStatus = async (
 
 export const fetchApprovedCompanies = async () => {
   try {
-    const response = await apiClient.get(
-      "/management/fetch_all_approved_companies/"
-    );
+    const response = await requestWithFallback({
+      method: "get",
+      url: "/management/fetch_all_approved_companies/",
+    });
     return {
       status: response.status,
       data: response.data,
@@ -138,9 +215,10 @@ export const fetchApprovedCompanies = async () => {
 
 export const fetchPaidBookings = async () => {
   try {
-    const response = await apiClient.get(
-      "/management/fetch_all_paid_bookings/"
-    );
+    const response = await requestWithFallback({
+      method: "get",
+      url: "/management/fetch_all_paid_bookings/",
+    });
     return {
       status: response.status,
       data: response.data,
@@ -149,11 +227,17 @@ export const fetchPaidBookings = async () => {
     if (error.response) {
       return {
         status: error.response.status,
-        error: error.response.data.message,
+        error:
+          error.response.data?.message ||
+          error.response.data?.detail ||
+          "Failed to fetch paid bookings.",
       };
     } else {
       console.error("Error fetching paid bookings:", error);
-      throw error;
+      return {
+        status: 0,
+        error: `Unable to connect to API (${baseURL}). Check backend server, ngrok tunnel, and CORS.`,
+      };
     }
   }
 };
@@ -164,13 +248,14 @@ export const confirmBookingPayment = async (
   bookingNumber
 ) => {
   try {
-    const response = await apiClient.put(
-      "/management/approve_booking_payment/",
-      {
+    const response = await requestWithFallback({
+      method: "put",
+      url: "/management/approve_booking_payment/",
+      data: {
         session_token: user_session_token,
         booking_number: bookingNumber,
-      }
-    );
+      },
+    });
 
     return {
       status: response.status,
@@ -202,9 +287,10 @@ export const confirmBookingPayment = async (
 // Define the function to fetch all pending partner payments
 export const fetchPendingPartnerPayments = async () => {
   try {
-    const response = await apiClient.get(
-      "/management/fetch_all_partner_receive_able_payments_details/"
-    );
+    const response = await requestWithFallback({
+      method: "get",
+      url: "/management/fetch_all_partner_receive_able_payments_details/",
+    });
     return { status: response.status, data: response.data };
   } catch (error) {
     return { status: error.response?.status, error: error.message };
@@ -214,7 +300,9 @@ export const fetchPendingPartnerPayments = async () => {
 // Define the function to fetch booking details
 export const fetchBookingDetails = async (partner_session_token, booking_number) => {
   try {
-    const response = await apiClient.get('/bookings/get_booking_detail_by_booking_number/', {
+    const response = await requestWithFallback({
+      method: "get",
+      url: "/bookings/get_booking_detail_by_booking_number/",
       params: {
         partner_session_token,
         booking_number,
@@ -230,9 +318,13 @@ export const fetchBookingDetails = async (partner_session_token, booking_number)
 //API for approving partner's payments
 export const updatePartnerPaymentStatus = async (partner_session_token, booking_number) => {
   try {
-    const response = await apiClient.put('/management/transfer_partner_receive_able_payments/', {
-      partner_session_token,
-      booking_number,
+    const response = await requestWithFallback({
+      method: "put",
+      url: "/management/transfer_partner_receive_able_payments/",
+      data: {
+        partner_session_token,
+        booking_number,
+      },
     });
     return { status: response.status, data: response.data };
   } catch (error) {

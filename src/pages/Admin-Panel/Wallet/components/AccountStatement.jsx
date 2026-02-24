@@ -1,141 +1,119 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useEffect, useState } from "react";
 import AccountStatementImage from "../../../../assets/AccountsStatement.svg";
 import CRLogo1 from "../../../../assets/CR-Logo1.svg";
 import debitIcon from "../../../../assets/debitIcon.svg";
-import { ToggleBankAccount } from "../wallet";
 import { getPartnerAllTransaction } from "../../../../utility/Api";
 import Loader from "../../../../components/loader";
 import { useNavigate } from "react-router-dom";
+import { getPartnerSessionToken } from "../../../../utility/session";
 
 const AccountStatement = () => {
-  const { state, dispatch } = useContext(ToggleBankAccount);
-  const [formData, setFormData] = useState({
-    transaction_amount: "",
-    transaction_type: "",
-    transaction_time: "",
-    transaction_description: "",
-  });
   const [transactions, setTransactions] = useState([]);
-  const [initialData, setInitialData] = useState({});
-  const [errors, setErrors] = useState({});
-  const [submitLoading, setSubmitLoading] = useState(false);
-  const [fetchingData, setFetchingData] = useState(true); // New state for fetching loader
+  const [fetchingData, setFetchingData] = useState(true);
   const navigate = useNavigate();
+
   useEffect(() => {
-    const fetchallTransactions = async () => {
-      const profile = JSON.parse(localStorage.getItem("SignedUp-User-Profile"));
-      if (profile) {
-        const partnerSessionToken = profile.partner_session_token;
-        try {
-          const historyData = await getPartnerAllTransaction(
-            partnerSessionToken
-          );
-          if (historyData) {
-            setTransactions(historyData);
-          }
-        } catch (error) {
-          console.error(error.response.data.message);
-        } finally {
-          setFetchingData(false); // Stop the loader once data is fetched
+    const fetchAllTransactions = async () => {
+      try {
+        const historyData = await getPartnerAllTransaction(getPartnerSessionToken());
+        if (historyData) {
+          setTransactions(historyData);
         }
-      } else {
-        setFetchingData(false); // Stop the loader if no profile is found
+      } catch (error) {
+        console.error(error?.response?.data?.message || error);
+      } finally {
+        setFetchingData(false);
       }
     };
 
-    fetchallTransactions();
+    fetchAllTransactions();
   }, []);
 
-
-  function formatTransactionTime(isoString) {
-    const date = new Date(isoString);
-    const options = {
-      year: "numeric",
-      month: "long",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    };
-    return date.toLocaleString("en-US", options).replace(",", "");
-  }
   const handleClick = () => {
     navigate("/accountstatementhistory", { state: { transactions } });
   };
 
   return (
-    <div className="bg-white rounded-[10px] h-full">
-      <div className="flex px-6 items-center justify-between">
-        <h1 className="text-lg py-4 text-[#4B465C]">Account Statement</h1>
-        {/* <img src={AccountStatementIcon} alt="Icon not found" /> */}
-        <a
+    <div className="h-full rounded-[10px] bg-white">
+      <div className="flex items-center justify-between px-6">
+        <h1 className="py-4 text-lg text-[#4B465C]">Account Statement</h1>
+        <button
+          type="button"
           onClick={handleClick}
-          className="text-[#7367F0] text-sm underline cursor-pointer"
+          className="text-sm text-brand-600 underline"
         >
           View all
-        </a>
+        </button>
       </div>
-      <div className="w-[100%] h-[10px] bg-[#F6F6F6] "></div>
-      <div className=" p-4 rounded-b-lg w-full max-w-md flex flex-col ">
+      <div className="h-[10px] w-full bg-[#F6F6F6]" />
+      <div className="w-full p-4">
         {fetchingData ? (
-          <div className="h-[350px] flex justify-center items-center">
+          <div className="flex h-[350px] items-center justify-center">
             <Loader />
           </div>
         ) : transactions.length > 0 ? (
-          transactions.map((transaction, index) => (
-            <div
-              key={index}
-              className="h-[350px] overflow-y-auto overflow-x-hidden"
-            >
-              <div className="pl-2 pr-2 rounded-lg w-full max-w-md flex flex-col ">
-                <div className="flex flex-row border-2 border-gray-200 rounded items-center">
-                  {transaction.transaction_type === "Credit" ? (
-                    <img className="pl-3 pr-1" src={CRLogo1} alt="" />
-                  ) : (
-                    <img className="pl-3 pr-1" src={debitIcon} alt="" />
-                  )}
-                  <div className="flex flex-col p-3">
-                    <div className="pb-1 flex justify-between items-center font-poppins text-[14px] text-[#00936C]">
-                      <p className="font-poppins text-[#4B465C] text-[12px]">
+          <div className="h-[350px] space-y-2 overflow-y-auto overflow-x-hidden pr-1">
+            {transactions.slice(0, 10).map((transaction, index) => (
+              <article
+                key={transaction.transaction_id || `${transaction.transaction_time}-${index}`}
+                className="rounded-lg border border-slate-200"
+              >
+                <div className="flex items-center gap-2 p-3">
+                  <img
+                    className="h-8 w-8"
+                    src={transaction.transaction_type === "Credit" ? CRLogo1 : debitIcon}
+                    alt=""
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between pb-1 text-[14px]">
+                      <p className="text-[12px] text-[#4B465C]">
                         {transaction.transaction_type === "Credit"
                           ? "Fund Received"
                           : "Fund Transfer"}
                       </p>
-                      <p className="ml-auto">
-                        {transaction.transaction_amount.toLocaleString(
-                          "en-US",
-                          { minimumFractionDigits: 2, maximumFractionDigits: 2 }
-                        )}
+                      <p className="text-sm font-semibold text-brand-600">
+                        {Number(transaction.transaction_amount || 0).toLocaleString("en-US", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </p>
                     </div>
-                    <p className="font-poppins text-[#4B465C] text-[10px]">
+                    <p className="text-[11px] text-[#4B465C]">
                       {transaction.transaction_description}
+                    </p>
+                    <p className="mt-1 text-[10px] text-[#4B465C]">
+                      {formatTransactionTime(transaction.transaction_time)}
                     </p>
                   </div>
                 </div>
-                <p className="font-poppins p-2 text-[#4B465C] text-[10px]">
-                  {formatTransactionTime(transaction.transaction_time)}
-                </p>
-              </div>
-            </div>
-          ))
+              </article>
+            ))}
+          </div>
         ) : (
-          <div className=" rounded-lg w-full py-11 max-w-md items-center justify-center">
-            <div className="flex flex-col items-center justify-center">
-              <img
-                className="p-4"
-                src={AccountStatementImage}
-                alt="No img found"
-              />
-              <p className="mt-2 text-sm text-center text-[#121212] font-poppins">
-                No transaction history yet
-              </p>
-            </div>
+          <div className="flex w-full flex-col items-center justify-center py-11">
+            <img className="p-4" src={AccountStatementImage} alt="No transactions" />
+            <p className="mt-2 text-center text-sm text-[#121212]">
+              No transaction history yet
+            </p>
           </div>
         )}
       </div>
     </div>
   );
+};
+
+const formatTransactionTime = (isoString) => {
+  const date = new Date(isoString);
+  const options = {
+    year: "numeric",
+    month: "long",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  };
+
+  return date.toLocaleString("en-US", options).replace(",", "");
 };
 
 export default AccountStatement;

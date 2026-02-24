@@ -1,8 +1,6 @@
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
-import Header from "../../../../components/Headers/HeaderForLoggedIn";
-// import NavigationBar from "../../../components/NavigationBarForContent";
-import Footer from "../../../../components/Footers/FooterForLoggedIn";
+import AdminPanelLayout from "../../../../components/layout/AdminPanelLayout";
 
 const TermsServices = () => {
   useEffect(() => {
@@ -12,9 +10,11 @@ const TermsServices = () => {
     });
   }, []);
   return (
-    <main>
-      <Header />
-      {/* <NavigationBar /> */}
+    <AdminPanelLayout
+      title="Terms of Service"
+      subtitle="Review the service terms and obligations for platform usage."
+      mainClassName="py-5 bg-gray-50"
+    >
       <div className="min-h-screen bg-gray-50 flex flex-col justify-start sm:px-6 lg:px-8">
         <div className="mt-10">
           <h2 className="text-center text-3xl text-gray-900">
@@ -1314,8 +1314,7 @@ const TermsServices = () => {
           </div>
         </div>
       </div>
-      <Footer />
-    </main>
+    </AdminPanelLayout>
   );
 };
 

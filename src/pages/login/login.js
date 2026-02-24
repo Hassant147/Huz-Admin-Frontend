@@ -1,19 +1,23 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import PhoneInput from 'react-phone-number-input';
-import 'react-phone-number-input/style.css';
-import bgimg from "../../assets/bgImage.png";
-import FooterForSignup from "../../components/Footers/FooterForSingup";
-import Loader from '../../components/loader';  // Import the Loader component
 import { BiErrorAlt } from "react-icons/bi";
+import PhoneInput from "react-phone-number-input";
+import "react-phone-number-input/style.css";
+import { useNavigate } from "react-router-dom";
+import FooterForSignup from "../../components/Footers/FooterForSingup";
+import Loader from "../../components/loader";
+import { AppButton, AppContainer } from "../../components/ui";
+import bgimg from "../../assets/bgImage.png";
 import { checkUserExistence } from "../../utility/Super-Admin-Api";
+import {
+  getPakistanLocalDigits,
+  getPakistanPhoneInputState,
+  validatePhoneNumberForLogin,
+} from "../../utility/phoneValidation";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const [value, setValue] = useState();
-  const [errors, setErrors] = useState({
-    phoneNumber: "",
-  });
+  const [value, setValue] = useState("");
+  const [errors, setErrors] = useState({ phoneNumber: "" });
   const [apiError, setApiError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -23,28 +27,26 @@ const LoginPage = () => {
     setApiError("");
     setIsLoading(true);
 
-    if (!value) {
-      setErrors({
-        phoneNumber: "Phone number is required",
-      });
+    const phoneValidation = validatePhoneNumberForLogin(value);
+
+    if (!phoneValidation.isValid) {
+      setErrors({ phoneNumber: phoneValidation.error });
       setIsLoading(false);
       return;
     }
 
     try {
-      const { status, data } = await checkUserExistence(value);
+      const { status, data } = await checkUserExistence(phoneValidation.normalizedPhoneNumber);
 
       if (status === 200 && data.user_type === "admin") {
-        // Store the entire user data in local storage
-        localStorage.setItem('user-data', JSON.stringify(data));
-        
-        // Set the isSuperAdmin flag if the user is a super admin
+        localStorage.setItem("user-data", JSON.stringify(data));
         localStorage.setItem("isSuperAdmin", true);
-
-        // Redirect to the super admin dashboard
         navigate("/super-admin-dashboard");
-      } else if (status === 200 && data.user_type !== "admin") {
-        setApiError("User is not an admin.");
+        return;
+      }
+
+      if (status === 200 && data.user_type !== "admin") {
+        setApiError("This account is not authorized for admin access.");
       } else if (status === 404) {
         setApiError("User does not exist.");
       }
@@ -57,63 +59,100 @@ const LoginPage = () => {
 
   return (
     <div
-      className="flex flex-col min-h-screen font-sans"
+      className="flex flex-col min-h-screen"
       style={{
-        backgroundImage: `url(${bgimg})`,
+        backgroundImage: `linear-gradient(180deg, rgba(255,255,255,0.88), rgba(244,247,247,0.92)), url(${bgimg})`,
         backgroundSize: "cover",
         backgroundRepeat: "no-repeat",
         backgroundPosition: "center",
       }}
     >
-      <main className="flex-grow flex justify-center items-center p-4">
-        <div className="w-full max-w-md py-12 px-6 bg-white rounded-lg shadow-custom-shadow md:mx-auto">
-          <h2 className="text-base font-medium mb-1 text-gray-600 text-center">
-            Log in to your account
-          </h2>
+      <main className="flex-grow flex items-center py-8">
+        <AppContainer>
+          <div className="max-w-md mx-auto app-card px-6 py-10 md:px-8">
+            <h2 className="text-xl font-semibold text-ink-900 text-center">Admin sign in</h2>
+            <p className="mt-2 mb-6 text-sm text-ink-500 text-center">
+              Continue with your registered admin phone number.
+            </p>
 
-          <div className="mb-4">
-            <label
-              htmlFor="phoneNumber"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Phone Number
-            </label>
-            <PhoneInput
-              placeholder="Enter phone number"
-              value={value}
-              onChange={setValue}
-              defaultCountry="US"
-              className={`mt-1 p-2 block w-full rounded-md border-gray-300 shadow-sm ${
-                errors.phoneNumber ? "border-red-500" : ""
-              }`}
-            />
-            {errors.phoneNumber && (
-              <p className="mt-2 text-sm text-red-600">
-                {errors.phoneNumber}
-              </p>
-            )}
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4">
+                <label htmlFor="phoneNumber" className="block text-sm font-semibold text-ink-700 mb-1.5">
+                  Phone Number
+                </label>
+                <PhoneInput
+                  placeholder="Enter phone number"
+                  value={value}
+                  onChange={(phoneNumberValue) => {
+                    const phoneInputState = getPakistanPhoneInputState(phoneNumberValue || "");
+
+                    if (!phoneInputState.isAllowed) {
+                      setValue(phoneInputState.normalizedPhoneNumber || value || "");
+                      setErrors({ phoneNumber: phoneInputState.error });
+                      return;
+                    }
+
+                    setValue(phoneInputState.normalizedPhoneNumber);
+                    if (errors.phoneNumber || apiError) {
+                      setErrors({ phoneNumber: "" });
+                      setApiError("");
+                    }
+                  }}
+                  defaultCountry="PK"
+                  country="PK"
+                  international={false}
+                  countryCallingCodeEditable={false}
+                  numberInputProps={{
+                    inputMode: "numeric",
+                    pattern: "[0-9]*",
+                    onKeyDown: (event) => {
+                      const allowedKeys = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Home", "End"];
+
+                      if (allowedKeys.includes(event.key)) {
+                        return;
+                      }
+
+                      if (!/^\d$/.test(event.key)) {
+                        event.preventDefault();
+                        return;
+                      }
+
+                      const localDigits = getPakistanLocalDigits(value);
+
+                      if (localDigits.length === 0 && event.key === "0") {
+                        event.preventDefault();
+                        setErrors({ phoneNumber: "Do not start number with 0 after +92" });
+                        return;
+                      }
+
+                      if (localDigits.length >= 10) {
+                        event.preventDefault();
+                        setErrors({ phoneNumber: "Pakistan mobile number cannot exceed 10 digits" });
+                      }
+                    },
+                  }}
+                  className={`mt-1 block w-full ${errors.phoneNumber ? "border-red-500" : ""}`}
+                />
+                {errors.phoneNumber ? <p className="mt-2 text-sm text-red-600">{errors.phoneNumber}</p> : null}
+              </div>
+
+              {apiError ? (
+                <div className="text-red-500 text-sm flex items-center gap-1 mt-1 mb-4">
+                  <BiErrorAlt />
+                  <span>{apiError}</span>
+                </div>
+              ) : null}
+
+              <AppButton
+                type="submit"
+                className={`w-full ${isLoading ? "opacity-60 cursor-not-allowed" : ""}`}
+                disabled={isLoading}
+              >
+                {isLoading ? <Loader /> : "Continue"}
+              </AppButton>
+            </form>
           </div>
-
-          {apiError && (
-            <div
-              className="text-red-500 text-xs flex items-center
-                            gap-1 mt-1 mb-4"
-            >
-              <BiErrorAlt />
-              <div className="text-red-600 text-sm">{apiError}</div>
-            </div>
-          )}
-
-          <button
-            onClick={handleSubmit}
-            className={`w-full text-sm p-2 mb-3 bg-[#00936C] text-white rounded-md hover:bg-green-900 flex items-center justify-center ${
-              isLoading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            disabled={isLoading}
-          >
-            {isLoading ? <Loader /> : "Continue"}
-          </button>
-        </div>
+        </AppContainer>
       </main>
 
       <FooterForSignup />

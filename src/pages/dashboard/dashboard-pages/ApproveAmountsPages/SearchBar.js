@@ -1,34 +1,27 @@
-import React, { useState } from "react";
+import React from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-const SearchBar = ({ onSearch }) => {
-    const [selectedDate, setSelectedDate] = useState(null);
-
-    const handleDateChange = (date) => {
-        setSelectedDate(date);
-        if (date) {
-            onSearch(date);
-        }
-    };
-
-    return (
-        <div className="mb-6">
-            <label htmlFor="date" className="block text-gray-700 text-sm font-bold mb-2">
-                Select Date:
-            </label>
-            <div className="flex items-center">
-                <DatePicker
-                    selected={selectedDate}
-                    onChange={handleDateChange}
-                    dateFormat="yyyy-MM-dd"
-                    placeholderText="Select a date"
-                    className="border border-gray-300 rounded px-3 py-2"
-                    calendarClassName="custom-calendar" // Custom class for calendar styling
-                />
-            </div>
-        </div>
-    );
+const SearchBar = ({ selectedDate, onDateChange }) => {
+  return (
+    <div className="w-full sm:w-[230px]">
+      <label
+        htmlFor="approval-date"
+        className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-300"
+      >
+        Filter by Date
+      </label>
+      <DatePicker
+        id="approval-date"
+        selected={selectedDate}
+        onChange={onDateChange}
+        dateFormat="yyyy-MM-dd"
+        placeholderText="Select a date"
+        className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm shadow-sm"
+        calendarClassName="custom-calendar"
+      />
+    </div>
+  );
 };
 
 export default SearchBar;

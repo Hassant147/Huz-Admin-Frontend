@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Packagetype.css";
-import Header from "../../../../components/Headers/HeaderForAdminPanel";
-import Footer from "../../../../components/Footers/FooterForLoggedIn";
-import NavigationBar from "../../../../components/NavigationBarForContent";
+import AdminPanelLayout from "../../../../components/layout/AdminPanelLayout";
 import { resetFormAndTab } from "../../../../utility/formUtils"; // Import the utility function
 import { BiErrorAlt } from "react-icons/bi";
 
@@ -47,10 +45,12 @@ const PackageType = () => {
   };
 
   return (
-    <div className="font-sans bg-[#f6f6f6] min-h-screen flex flex-col">
-      <Header />
-      <NavigationBar />
-      <main className="flex-grow w-[85%] mx-auto my-14">
+    <AdminPanelLayout
+      title="Package Enrollment"
+      subtitle="Choose the package type you want to enroll."
+      mainClassName="py-5 bg-[#f6f6f6]"
+    >
+      <main className="my-5">
         <div className="">
           <h3 className="text-lg font-medium mb-2 text-gray-600">
             Package Enrollment
@@ -129,8 +129,7 @@ const PackageType = () => {
           </button>
         </div>
       </main>
-      <Footer />
-    </div>
+    </AdminPanelLayout>
   );
 };
 

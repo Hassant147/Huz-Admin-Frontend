@@ -1,71 +1,73 @@
-import React, { useContext } from "react";
+import React, { useContext, useMemo } from "react";
 import { NumericFormat } from "react-number-format";
-import icon from "../../../../../assets/booking/id.svg";
 import { CurrencyContext } from "../../../../../utility/CurrencyContext";
+import { AppCard, AppSectionHeader } from "../../../../../components/ui";
+import { formatDate, withFallback } from "./bookingDetailsUtils";
 
 const BookingInfo = ({ booking }) => {
   const { selectedCurrency, exchangeRates } = useContext(CurrencyContext);
 
+  const convertedCost = useMemo(() => {
+    const totalPrice = Number(booking?.total_price || 0);
+    if (!exchangeRates?.[selectedCurrency] || !exchangeRates?.PKR) {
+      return totalPrice;
+    }
+    return (totalPrice / exchangeRates.PKR) * exchangeRates[selectedCurrency];
+  }, [booking, exchangeRates, selectedCurrency]);
+
   if (!booking) {
-    return null; // or a loader or placeholder
+    return null;
   }
 
-  const {
-    adults = 0,
-    child = 0,
-    total_price = 0,
-    start_date,
-    end_date,
-    special_request = "",
-  } = booking;
-
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
-  const convertedCost = exchangeRates[selectedCurrency]
-    ? (total_price / exchangeRates["PKR"]) * exchangeRates[selectedCurrency]
-    : total_price;
-
   return (
-    <div className="p-4 text-[#484848] bg-white border border-gray-200 shadow-sm rounded-lg">
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3 xl:grid-cols-4 mb-4">
-        <div>
-          <h3 className="text-sm font-normal">Adults & Children</h3>
-          <p className="text-md font-semibold">
-            {adults} - {child}
-          </p>
-        </div>
-        <div>
-          <h3 className="text-sm font-normal">Total Cost</h3>
-          <NumericFormat
-            value={convertedCost}
-            displayType={"text"}
-            thousandSeparator
-            prefix={`${selectedCurrency} `}
-            decimalScale={2}
-            fixedDecimalScale={true}
-            className="font-semibold text-[16px]"
+    <AppCard className="border-slate-200">
+      <div className="app-content-stack">
+        <AppSectionHeader
+          title="Booking Information"
+          subtitle="Passenger, schedule, and pricing overview"
+        />
+
+        <div className="grid gap-3 md:grid-cols-3">
+          <InfoTile label="Adults / Children" value={`${booking.adults || 0} / ${booking.child || 0}`} />
+          <InfoTile
+            label="Total Cost"
+            value={
+              <NumericFormat
+                value={convertedCost}
+                displayType="text"
+                thousandSeparator
+                prefix={`${selectedCurrency} `}
+                decimalScale={2}
+                fixedDecimalScale
+                className="font-semibold text-brand-600"
+              />
+            }
+          />
+          <InfoTile
+            label="Travel Window"
+            value={`${formatDate(booking.start_date)} to ${formatDate(booking.end_date)}`}
           />
         </div>
+
         <div>
-          <h3 className="text-sm font-normal">Start Date & End Date</h3>
-          <p className="text-md font-semibold">
-            {formatDate(start_date)} <span className="text-[#00936C]">to</span>{" "}
-            {formatDate(end_date)}
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-ink-300">
+            Special Request
+          </p>
+          <p className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-ink-700">
+            {withFallback(booking.special_request, "No special request shared.")}
           </p>
         </div>
       </div>
-      <div>
-        <h3 className="text-sm font-normal text-gray-400">Special Request</h3>
-        <p className="text-md font-semibold">{special_request}</p>
-      </div>
-    </div>
+    </AppCard>
+  );
+};
+
+const InfoTile = ({ label, value }) => {
+  return (
+    <article className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-ink-300">{label}</p>
+      <div className="mt-1 text-sm text-ink-700">{value}</div>
+    </article>
   );
 };
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { TbCheckbox } from "react-icons/tb";
 import route from "../../../../assets/route.svg";
 import { NumericFormat } from "react-number-format";
@@ -6,6 +6,8 @@ import edit from "../../../../assets/editLogo.svg";
 import DeactivateButton from "../../../../components/DeactivateButton";
 import ActivateButton from "../../../../components/ActivateButton"; // Adjust the import path as needed
 import { Toaster } from "react-hot-toast";
+import { AppButton, AppCard } from "../../../../components/ui";
+import { getPartnerSessionToken } from "../../../../utility/session";
 
 const Card = ({
   imageUrl,
@@ -15,19 +17,15 @@ const Card = ({
   route1,
   route2,
   price,
-  plateNo,
   transportPackage,
   type,
   packageType,
   setSelectedStatus, // Receive the setSelectedStatus prop
 }) => {
-  const [loading, setLoading] = useState(false);
-  const [key, setKey] = useState(Date.now()); // State to trigger re-render
-  const { partner_session_token } = JSON.parse(
-    localStorage.getItem("SignedUp-User-Profile")
-  );
+  const partnerSessionToken = getPartnerSessionToken();
   const availabilityDays =
     typeof availability === "string" ? availability.split(", ") : [];
+
   const handleEdit = () => {
     localStorage.setItem(
       "editTransportPackage",
@@ -37,26 +35,23 @@ const Card = ({
   };
 
   return (
-    <div
-      key={key}
-      className="border rounded-lg shadow-lg flex flex-col md:flex-row mb-6"
-    >
+    <AppCard className="overflow-hidden border-slate-200 flex flex-col gap-0 p-0 md:flex-row">
       <img
         src={imageUrl}
         alt={title}
-        className="w-full xl:h-[233px] md:w-1/4 rounded-l-lg object-cover"
+        className="h-[220px] w-full object-cover md:h-auto md:w-[260px]"
       />
-      <div className="flex-1 p-4 pl-6">
+      <div className="flex-1 p-5 md:p-6">
         <div className="flex items-center gap-2">
-          <h2 className="text-lg font-normal text-[#4B465C]">{title}</h2>
-          <p className="hidden md:block text-xs text-[#4b465c] p-1 bg-[#E6F4F0] rounded-md h-6 px-3">
+          <h2 className="text-lg font-semibold text-[#243447]">{title}</h2>
+          <p className="hidden h-6 rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700 md:block">
             {type}
           </p>
         </div>
-        <p className="text-[#4B465C] mt-2 text-sm font-thin">
+        <p className="mt-2 text-sm text-ink-700">
           {capacity} People Sitting capacity
         </p>
-        <div className="flex flex-wrap mb-3 lg:mb-7">
+        <div className="mb-3 mt-2 flex flex-wrap lg:mb-7">
           {availabilityDays.map((day) => (
             <div key={day} className="flex items-center text-sm mr-4">
               <TbCheckbox className="text-[#00936c]" />
@@ -64,11 +59,11 @@ const Card = ({
             </div>
           ))}
         </div>
-        <p className="text-[#4b465c] flex items-center gap-2 text-sm ">
+        <p className="flex items-center gap-2 text-sm text-[#4b465c]">
           <img src={route} alt="" />
           {route1} {packageType === "Fix Route" ? ` to ${route2}` : ""}
         </p>
-        <div className="md:flex justify-between items-center">
+        <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <NumericFormat
               value={price}
@@ -81,34 +76,34 @@ const Card = ({
               {packageType === "Fix Route" ? "" : `${route2}`}
             </p>
           </div>
-          <div className="flex gap-2 text-sm p-4">
+          <div className="flex flex-wrap gap-2 text-sm">
             {transportPackage.package_status === "Deactivated" ? (
               <ActivateButton
                 packageType="transport"
-                sessionToken={partner_session_token}
+                sessionToken={partnerSessionToken}
                 transportToken={transportPackage.transport_token}
                 setSelectedStatus={setSelectedStatus} // Pass the prop down
               />
             ) : (
               <DeactivateButton
                 packageType="transport"
-                sessionToken={partner_session_token}
+                sessionToken={partnerSessionToken}
                 transportToken={transportPackage.transport_token}
                 setSelectedStatus={setSelectedStatus} // Pass the prop down
               />
             )}
-            <button
-              className="bg-[#00936C] hover:bg-[#048462] flex items-center gap-2 text-white px-4 py-2 rounded-md"
+            <AppButton
+              size="sm"
+              startIcon={<img src={edit} alt="" className="h-4" />}
               onClick={handleEdit}
             >
-              <img src={edit} alt="" className="h-4" />
               Edit
-            </button>
+            </AppButton>
           </div>
         </div>
       </div>
       <Toaster />
-    </div>
+    </AppCard>
   );
 };
 

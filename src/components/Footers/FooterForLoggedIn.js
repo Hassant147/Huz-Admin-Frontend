@@ -1,51 +1,28 @@
 import React from "react";
+import { AppContainer } from "../ui";
 
 const Footer = () => {
   return (
-    <footer className="bg-white font-sans py-4">
-      {/* Links Section */}
-      <div className="w-[85%] mx-auto md:flex-row flex flex-col justify-between items-center">
-        <nav className="flex space-x-6 text-gray-600 text-sm">
-          <a
-            href="/terms-of-services"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:underline md:flex gap-1"
-          >
-            Terms <span className="hidden md:block">of Services</span>
+    <footer className="app-footer-shell py-4 mt-6">
+      <AppContainer className="flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-ink-500">
+        <nav className="flex flex-wrap items-center justify-center gap-4">
+          <a href="/terms-of-services" target="_blank" rel="noopener noreferrer" className="hover:text-brand-600">
+            Terms of Services
           </a>
-          <a
-            href="/privacy-policy"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:underline md:flex gap-1"
-          >
-            <span className="hidden md:block">Privacy </span>Policy
+          <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="hover:text-brand-600">
+            Privacy Policy
           </a>
-          <a
-            href="/documentation"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:underline"
-          >
+          <a href="/documentation" target="_blank" rel="noopener noreferrer" className="hover:text-brand-600">
             Documentation
           </a>
-          <a
-            href="/faq"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:underline"
-          >
+          <a href="/faq" target="_blank" rel="noopener noreferrer" className="hover:text-brand-600">
             FAQs
           </a>
         </nav>
-
-        {/* Copyright Section */}
-        <div className="mt-4 md:mt-0 text-gray-500 text-sm">
-          ©️ Copyright{" "}
-          <span className="font-thin text-[#00936C]">Hajjumrah.co</span> 2024
+        <div>
+          © Copyright <span className="font-semibold text-brand-600">Hajjumrah.co</span> 2026
         </div>
-      </div>
+      </AppContainer>
     </footer>
   );
 };

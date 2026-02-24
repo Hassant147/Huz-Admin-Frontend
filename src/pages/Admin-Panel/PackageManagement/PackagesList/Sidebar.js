@@ -1,45 +1,50 @@
 import React, { useState } from "react";
+import { AppCard, AppSectionHeader } from "../../../../components/ui";
+
+const PACKAGE_TYPES = ["Hajj", "Umrah", "Transport"];
 
 const Sidebar = ({ onFilterChange }) => {
   const [selectedType, setSelectedType] = useState("Hajj");
-  const [active, setIsActive] = useState("Hajj");
 
   const handleFilterChange = (type) => {
     setSelectedType(type);
     onFilterChange(type);
-    setIsActive(type);
   };
-  return (
-    <div className="py-4 bg-[#FBFFFE] rounded-md shadow-md">
-      <h2 className="text-[13px] text-[#4B465C] opacity-[80%] font-semibold mb-4 px-4 lg:px-4 xl:px-7">
-        Select Package Type
-      </h2>
-      <ul>
-        {["Hajj", "Umrah", "Transport"].map((type) => (
-          <div
-            key={type}
-            className={`text-gray-700 hover:text-green-700 text-xs font-medium px-4 lg:px-4 xl:px-7 py-2 w-full text-left transition-colors duration-200 ${
-              selectedType === type ? "bg-[#E6F4F0]" : "hover:bg-gray-50"
-            }`}
-            onClick={() => handleFilterChange(type)}
-          >
-            <li className=" flex gap-2 items-center">
-              <input
-                type="radio"
-                id={type}
-                name="packageType"
-                checked={active === type}
-                className={`checkbox appearance-none focus:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-none border rounded-full border-gray-400 cursor-pointer w-4 h-4 ${
-                  active === type ? "checked:bg-[#00936c]" : ""
-                }`}
-              />
 
-              <button>{type} Package</button>
-            </li>
-          </div>
-        ))}
-      </ul>
-    </div>
+  return (
+    <AppCard className="sticky top-[144px] bg-white">
+      <AppSectionHeader
+        title="Package Type"
+        subtitle="Switch between your product categories."
+      />
+      <div className="mt-3 flex flex-col gap-2">
+        {PACKAGE_TYPES.map((type) => {
+          const isSelected = selectedType === type;
+          return (
+            <button
+              key={type}
+              type="button"
+              onClick={() => handleFilterChange(type)}
+              className={`w-full rounded-xl border px-3 py-3 text-left text-sm font-semibold transition ${
+                isSelected
+                  ? "border-brand-500 bg-brand-50 text-brand-700"
+                  : "border-slate-200 bg-white text-ink-700 hover:border-brand-200 hover:bg-slate-50"
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <span
+                  className={`h-4 w-4 rounded-full border ${
+                    isSelected ? "border-brand-600 bg-brand-500" : "border-slate-400"
+                  }`}
+                  aria-hidden="true"
+                />
+                {type} Package
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </AppCard>
   );
 };
 

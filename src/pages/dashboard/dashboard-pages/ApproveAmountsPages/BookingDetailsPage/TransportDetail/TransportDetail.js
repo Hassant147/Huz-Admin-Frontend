@@ -1,102 +1,101 @@
-import React, { useContext } from "react";
+import React, { useContext, useMemo } from "react";
 import { BookingContext } from "../../../../../../context/BookingContext";
 import phone from "../../../../../../assets/booking/phone.svg";
 import user from "../../../../../../assets/booking/user.svg";
+import {
+  AppCard,
+  AppEmptyState,
+  AppSectionHeader,
+} from "../../../../../../components/ui";
+import errorIcon from "../../../../../../assets/error.svg";
+import { withFallback } from "../bookingDetailsUtils";
 
-const TransportDetails = () => {
-  const { booking } = useContext(BookingContext);
-  const transportDetails =
-    booking?.booking_hotel_and_transport_details?.length > 0
-      ? booking.booking_hotel_and_transport_details.filter(
-          (detail) => detail.detail_for === "Transport"
-        )
-      : [];
+const TransportDetails = ({ booking: bookingProp }) => {
+  const { booking: contextBooking } = useContext(BookingContext);
+  const booking = bookingProp || contextBooking;
+
+  const transportDetails = useMemo(() => {
+    const details = booking?.booking_hotel_and_transport_details || [];
+    return details.filter((detail) => detail.detail_for === "Transport");
+  }, [booking]);
+
   return (
-    <div className="space-y-2 pb-2">
-      <div className="flex justify-between items-center">
-        <h2 className="text-base font-medium text-gray-500">
-          Shared Transport Details
-        </h2>
-      </div>
-      <div className="bg-gray-50 rounded space-y-4">
-        {transportDetails.length > 0 ? (
-          transportDetails.map((detail, index) => (
-            <div
-              key={index}
-              className="p-6 bg-white border border-gray-200 rounded shadow-sm"
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-500 font-semibold">Jeddah</p>
-                  <div className="flex items-center space-x-2">
-                    <img
-                      src={user}
-                      alt="User Icon"
-                      className="w-5 h-5 text-gray-500"
-                    />
-                    <p className="text-sm text-gray-500">
-                      <strong>Full Name:</strong> {detail.jeddah_name}
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <img
-                      src={phone}
-                      alt="Phone Icon"
-                      className="w-5 h-5 text-gray-500"
-                    />
-                    <p className="text-sm text-gray-500">
-                      <strong>Contact:</strong> {detail.jeddah_number}
-                    </p>
-                  </div>
+    <AppCard className="border-slate-200">
+      <div className="app-content-stack">
+        <AppSectionHeader
+          title="Transport Details"
+          subtitle="Shared transfer coordinators for Jeddah and Madinah"
+        />
+
+        {transportDetails.length ? (
+          <div className="space-y-3">
+            {transportDetails.map((detail, index) => (
+              <article
+                key={`transport-detail-${index}`}
+                className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4"
+              >
+                <div className="grid gap-3 md:grid-cols-2">
+                  <TransportTile
+                    location="Jeddah"
+                    name={detail.jeddah_name}
+                    number={detail.jeddah_number}
+                  />
+                  <TransportTile
+                    location="Madinah"
+                    name={detail.madinah_name}
+                    number={detail.madinah_number}
+                  />
                 </div>
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-500 font-semibold">Madinah</p>
-                  <div className="flex items-center space-x-2">
-                    <img
-                      src={user}
-                      alt="User Icon"
-                      className="w-5 h-5 text-gray-500"
-                    />
-                    <p className="text-sm text-gray-500">
-                      <strong>Full Name:</strong> {detail.madinah_name}
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <img
-                      src={phone}
-                      alt="Phone Icon"
-                      className="w-5 h-5 text-gray-500"
-                    />
-                    <p className="text-sm text-gray-500">
-                      <strong>Contact:</strong> {detail.madinah_number}
-                    </p>
-                  </div>
+
+                <div className="mt-3">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-300">
+                    Customer Note
+                  </p>
+                  <p className="mt-1 text-sm text-ink-700">
+                    {withFallback(
+                      `${detail.comment_1 || ""} ${detail.comment_2 || ""}`.trim(),
+                      "No comments available."
+                    )}
+                  </p>
                 </div>
-              </div>
-              <div className="mt-4">
-                <p className="text-sm text-gray-500 font-thin">
-                  Special Note for customer
-                </p>
-                <p className="text-sm text-gray-600 mt-1">
-                  {detail.comment_1 || detail.comment_2
-                    ? `${detail.comment_1} ${detail.comment_2}`
-                    : "No comments available"}
-                </p>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className=" rounded-lg w-full max-w-md items-center justify-center">
-            <div className="flex flex-col items-center justify-center">
-              <p className="mt-2 text-sm text-center text-[#121212] font-poppins">
-                No Documents uploaded yet
-              </p>
-            </div>
+              </article>
+            ))}
           </div>
+        ) : (
+          <AppEmptyState
+            icon={<img src={errorIcon} alt="" className="h-6 w-6" />}
+            title="No transport details"
+            message="No transport arrangement records were uploaded for this booking."
+          />
         )}
+      </div>
+    </AppCard>
+  );
+};
+
+const TransportTile = ({ location, name, number }) => {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-ink-300">{location}</p>
+      <div className="mt-2 space-y-2">
+        <DetailRow icon={user} label="Contact Person" value={name} />
+        <DetailRow icon={phone} label="Phone Number" value={number} />
+      </div>
+    </div>
+  );
+};
+
+const DetailRow = ({ icon, label, value }) => {
+  return (
+    <div className="flex items-start gap-2">
+      <img src={icon} alt="" className="mt-0.5 h-4 w-4 shrink-0" />
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-300">{label}</p>
+        <p className="text-sm text-ink-700">{withFallback(value)}</p>
       </div>
     </div>
   );
 };
 
 export default TransportDetails;
+

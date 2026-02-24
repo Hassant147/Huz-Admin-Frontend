@@ -5,40 +5,54 @@ import inprogress from "../../../../assets/inprogress.svg";
 import activeBlack from "../../../../assets/activeWhite.svg";
 import inactiveBlack from "../../../../assets/deactivateWhite.svg";
 import inprogressWhite from "../../../../assets/incompleteWhite.svg";
+import { AppSegmentedControl } from "../../../../components/ui";
+
 const StatusBar = ({ selectedStatus, onStatusChange }) => {
   const statuses = [
     {
-      name: "Active",
-      img: `${selectedStatus === "Active" ? active : activeBlack}`,
+      value: "Active",
+      label: "Active",
+      icon: (
+        <img
+          src={selectedStatus === "Active" ? active : activeBlack}
+          alt=""
+          className="h-4 w-4"
+        />
+      ),
     },
     {
-      name: "Deactivated",
-      img: `${selectedStatus === "Deactivated" ? inactiveBlack : inactive}`,
+      value: "Deactivated",
+      label: "Deactivated",
+      icon: (
+        <img
+          src={selectedStatus === "Deactivated" ? inactiveBlack : inactive}
+          alt=""
+          className="h-4 w-4"
+        />
+      ),
     },
     {
-      name: "In Progress",
-      img: `${selectedStatus === "In Progress" ? inprogressWhite : inprogress}`,
+      value: "In Progress",
+      label: "In Progress",
+      icon: (
+        <img
+          src={selectedStatus === "In Progress" ? inprogressWhite : inprogress}
+          alt=""
+          className="h-4 w-4"
+        />
+      ),
     },
   ];
 
   return (
-    <div className="md:flex space-y-2 md:space-y-0 md:space-x-5 mb-4 ">
-      {" "}
-      {statuses.map((status) => (
-        <div
-          key={status}
-          className={`text-xs font-medium flex gap-2 justify-center items-center border-[1px] border-[#00936C33] rounded-md px-6 py-2 ${
-            selectedStatus === status.name
-              ? "text-white bg-[#00936c]"
-              : "bg-none text-[#4b465c]"
-          }`}
-          onClick={() => onStatusChange(status.name)}
-        >
-          <img src={status.img} alt="" className="h-4" />
-          <button>{status.name}</button>
-        </div>
-      ))}
-    </div>
+    <AppSegmentedControl
+      items={statuses}
+      value={selectedStatus}
+      onChange={onStatusChange}
+      getLabel={(item) => item.label}
+      getValue={(item) => item.value}
+      getIcon={(item) => item.icon}
+    />
   );
 };
 

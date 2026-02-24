@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from "react";
 import bannerimg from "../../../assets/bookingbg.svg";
-import Header from "../../../components/Headers/HeaderForAdminPanel";
-import NavigationBar from "../../../components/NavigationBarForContent";
 import arrow from "../../../assets/arrow.svg";
 import RatingSystem from "./RatingSystem";
 import ReviewComponent from "./ReviewComponent";
-import Footer from "../../../components/Footers/FooterForLoggedIn";
+import AdminPanelLayout from "../../../components/layout/AdminPanelLayout";
 import {
   getOverPartnerComments,
   getOverPartnerRating,
@@ -174,9 +172,7 @@ const Reviews = () => {
   };
 
   return (
-    <div className="bg-[#f6f6f6]">
-      <Header />
-      <NavigationBar />
+    <AdminPanelLayout useContainer={false} mainClassName="bg-[#f6f6f6] py-0">
       <div
         className="bg-[#bcdfd7]"
         style={{
@@ -320,9 +316,7 @@ const Reviews = () => {
           </div>
         </div>
       </div>
-
-      <Footer />
-    </div>
+    </AdminPanelLayout>
   );
 };
 

@@ -3,9 +3,7 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import { getWithdrawRequest } from "../../../../utility/Api";
-import Footer from "../../../../components/Footers/FooterForLoggedIn";
-import Header from "../../../../components/Headers/HeaderForAdminPanel";
-import NavigationBar from "../../../../components/NavigationBarForContent";
+import AdminPanelLayout from "../../../../components/layout/AdminPanelLayout";
 import DeleteIcon from "../../../../assets/DeleteIcon.svg";
 import Loader from "../../../../components/loader";
 import AccountStatementImage from "../../../../assets/AccountsStatement.svg";
@@ -36,29 +34,31 @@ const WithdrawHistory = () => {
     fetchBankAccounts();
   }, []);
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
-      <NavigationBar />
-      <div className="text-[#4b465c] my-4 w-[90%] mx-auto flex-grow">
+    <AdminPanelLayout
+      title="Withdrawal History"
+      subtitle="Review withdraw requests and their current processing status."
+      mainClassName="py-5"
+    >
+      <div className="text-[#4b465c] my-1 flex-grow">
         <p className="font-bold py-3">Withdrawal History</p>
 
-        <div class="relative sm:rounded-sm bg-gray-50">
-          <table class="w-full text-sm text-left border-[1px] border-[#DBDADE] rtl:text-right text-[#4b465c] ">
-            <thead class="text-xs text-gray-700 uppercase border-[1px] border-[#DBDADE] ">
+        <div className="relative sm:rounded-sm bg-gray-50">
+          <table className="w-full text-sm text-left border-[1px] border-[#DBDADE] rtl:text-right text-[#4b465c] ">
+            <thead className="text-xs text-gray-700 uppercase border-[1px] border-[#DBDADE] ">
               <tr>
-                <th scope="col" class="px-6 py-3">
+                <th scope="col" className="px-6 py-3">
                   Account Detail:
                 </th>
-                <th scope="col" class="px-6 py-3">
+                <th scope="col" className="px-6 py-3">
                   Request Time:
                 </th>
-                <th scope="col" class="px-6 py-3">
+                <th scope="col" className="px-6 py-3">
                   Amount
                 </th>
-                <th scope="col" class="px-6 py-3">
+                <th scope="col" className="px-6 py-3">
                   Process Time
                 </th>
-                <th scope="col" class="px-6 py-3">
+                <th scope="col" className="px-6 py-3">
                   Status
                 </th>
               </tr>
@@ -70,10 +70,10 @@ const WithdrawHistory = () => {
                 </div>
               ) : bankAccounts.length > 0 ? (
                 bankAccounts.map((account) => (
-                  <tr class=" border-b hover:bg-gray-50 ">
+                  <tr className=" border-b hover:bg-gray-50 ">
                     <th
                       scope="row"
-                      class="p-4 py-2 text-sm font-medium text-[#4b465c] whitespace-nowrap"
+                      className="p-4 py-2 text-sm font-medium text-[#4b465c] whitespace-nowrap"
                     >
                       <div className="flex gap-1 items-center">
                         <img src="/BANK/ztbl.png" alt="" className="h-10" />
@@ -85,15 +85,15 @@ const WithdrawHistory = () => {
                         </div>
                       </div>
                     </th>
-                    <td class="px-6 py-2">{account.request_time}</td>
-                    <td class="px-6 py-2">
+                    <td className="px-6 py-2">{account.request_time}</td>
+                    <td className="px-6 py-2">
                       <span className="font-bold text-sm text-[#00936c]">
                         PKR
                       </span>{" "}
                       {account.withdraw_amount}
                     </td>
-                    <td class="px-6 py-2">{account.process_time}</td>
-                    <td class="px-6 py-2 ">
+                    <td className="px-6 py-2">{account.process_time}</td>
+                    <td className="px-6 py-2 ">
                       <div className="flex justify-between items-center">
                         <p className="bg-[#d2ebde] p-1 px-4 rounded-sm text-sm font-semibold">
                           {account.withdraw_status}
@@ -127,8 +127,7 @@ const WithdrawHistory = () => {
           </table>
         </div>
       </div>
-      <Footer />
-    </div>
+    </AdminPanelLayout>
   );
 };
 

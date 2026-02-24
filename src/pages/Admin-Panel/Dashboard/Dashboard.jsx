@@ -1,9 +1,5 @@
-import React, { useEffect, useReducer, useState } from "react";
-
-import Header from "../../../components/Headers/HeaderForAdminPanel";
-import NavigationBar from "../../../components/NavigationBarForContent";
-import Footer from "../../../components/Footers/FooterForLoggedIn";
-import Loader from "../../../components/loader.js"; // Assuming you have a Loader component
+import React, { useReducer } from "react";
+import AdminPanelLayout from "../../../components/layout/AdminPanelLayout";
 
 import DashboardStats from "./components/DashboardStats";
 import BudgetCard from "./components/BudgetCard";
@@ -14,62 +10,55 @@ import BalanceBackground from "../../../assets/BalanceBackground.svg";
 import TransactionHistory from "../../../pages/Admin-Panel/Wallet/components/TransactionHistory.jsx";
 import AccountStatement from "../../../pages/Admin-Panel/Wallet/components/AccountStatement.jsx";
 import { initialState, reducer } from "../../../reducer/usereducer";
-import { ToggleBankAccount } from "../../../pages/Admin-Panel/Wallet/wallet";
+import { ToggleBankAccount } from "../../../pages/Admin-Panel/Wallet/context";
 import RatingSystem from "./components/RatingSystem.jsx";
+import { AppCard } from "../../../components/ui";
 
 const Dashboard = () => {
-  const className = ["border shadow-custom-box rounded-[10px]"];
-
   const [state, dispatch] = useReducer(reducer, initialState);
-  const [isLoading, setIsLoading] = useState(true);
 
   return (
-    <div className="bg-[#f6f6f6]">
-      <Header />
-      <NavigationBar />
-      <div className="w-[90%] mx-auto  space-y-4 my-5">
+    <AdminPanelLayout
+      title="Dashboard"
+      subtitle="Monitor your bookings, payments, and operational performance in one place."
+      mainClassName="py-5"
+    >
+      <div className="app-content-stack">
         <BookingCards />
-        <div className="left-div w-full lg:flex lg:space-y-0 space-y-2 lg:space-x-4">
-          <div
-            className={`bg-[#CFE5E0] lg:w-[30%] w-full flex-grow ${className}`}
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,2fr)]">
+          <AppCard
+            className="overflow-hidden"
+            padded={false}
             style={{
+              background: "linear-gradient(180deg, #d6ece6, #edf7f4)",
               backgroundImage: `url(${BalanceBackground})`,
               backgroundSize: "contain",
               backgroundPosition: "center",
             }}
           >
             <BalanceCard />
-          </div>
-          <div className="row1 rounded-lg lg:w-[70%] shadow-md bg-white flex-grow">
+          </AppCard>
+          <AppCard padded={false}>
             <TransactionHistory />
-          </div>
+          </AppCard>
         </div>
-        <div className="w-full lg:flex lg:space-x-4 h-full">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,2.15fr)]">
           <ToggleBankAccount.Provider value={{ state, dispatch }}>
-            <div className="flex flex-grow flex-col w-full lg:w-[30%] min-h-full">
-              <AccountStatement className="flex-grow" />
-            </div>
+            <AppCard className="h-full" padded={false}>
+              <AccountStatement className="h-full" />
+            </AppCard>
           </ToggleBankAccount.Provider>
-          <div className="flex flex-grow flex-col w-full lg:w-[70%] lg:space-y-4">
-            {/* Row 1 */}
-            <div className="my-4 lg:my-0">
-              <DashboardStats />
-            </div>
-            {/* Row 2 */}
-            <div className="w-full lg:flex gap-4 lg:flex-row">
-              <div className="lg:flex-1 lg:h-full lg:w-[33%] lg:mb-0 mb-4">
-                <BudgetCard />
-              </div>
-              <div className="lg::flex-1 lg:h-full lg:w-[66%]">
-                <SupportTracker />
-              </div>
+          <div className="app-content-stack">
+            <DashboardStats />
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+              <BudgetCard />
+              <SupportTracker />
             </div>
           </div>
         </div>
         <RatingSystem />
       </div>
-      <Footer />
-    </div>
+    </AdminPanelLayout>
   );
 };
 

@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from "react";
-
-import NavigationBar from "../../../components/NavigationBarForContent";
-import Header from "../../../components/Headers/HeaderForAdminPanel";
-import Footer from "../../../components/Footers/FooterForLoggedIn";
+import AdminPanelLayout from "../../../components/layout/AdminPanelLayout";
 import UserInfoComponent from "./UserInfoComponent";
 import SidebarForCompany from "./SidebarForCompany";
 import SidebarForIndividual from "./SidebarForIndividual";
@@ -81,11 +78,9 @@ const Profile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 font-sans">
-      <Header />
-      <NavigationBar />
+    <AdminPanelLayout useContainer={false} mainClassName="bg-gray-100 py-0">
       <UserInfoComponent />
-      <main className="w-[85%] mx-auto py-6">
+      <main className="w-[90%] mx-auto py-6">
         <div className="mb-8">
           <NavTabs selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
         </div>
@@ -94,8 +89,7 @@ const Profile = () => {
           {renderTabContent()}
         </div>
       </main>
-      <Footer />
-    </div>
+    </AdminPanelLayout>
   );
 };
 

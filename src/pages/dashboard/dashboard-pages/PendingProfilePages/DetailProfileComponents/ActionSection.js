@@ -1,114 +1,154 @@
-import React, { useState, useEffect } from 'react';
-import { fetchSalesDirectors, updateCompanyStatus } from '../../../../../utility/Super-Admin-Api';
-import { toast } from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom'; // Assuming you're using react-router for navigation
+import React, { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
+import {
+  fetchSalesDirectors,
+  updateCompanyStatus,
+} from "../../../../../utility/Super-Admin-Api";
+import { AppButton, AppCard, AppSectionHeader } from "../../../../../components/ui";
 
-const ActionSection = ({ company, onSubmit }) => {
-    const [action, setAction] = useState('');
-    const [saleDirector, setSaleDirector] = useState('');
-    const [directors, setDirectors] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [isSubmitting, setIsSubmitting] = useState(false); // New state for handling submission
-    const navigate = useNavigate(); // Hook to programmatically navigate
+const ActionSection = ({ company, onSubmit = () => {} }) => {
+  const [action, setAction] = useState("");
+  const [saleDirector, setSaleDirector] = useState("");
+  const [directors, setDirectors] = useState([]);
+  const [loadingDirectors, setLoadingDirectors] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        const fetchData = async () => {
-            const { status, data, error } = await fetchSalesDirectors();
-            if (status === 200) {
-                setDirectors(data);
-            } else {
-                toast.error(error || "Failed to fetch sales directors.");
-            }
-            setLoading(false);
-        };
-        fetchData();
-    }, []);
+  const companyName = company?.partner_type_and_detail?.company_name || "this company";
 
-    const handleActionChange = (event) => {
-        setAction(event.target.value);
+  useEffect(() => {
+    const loadDirectors = async () => {
+      const { status, data, error } = await fetchSalesDirectors();
+      if (status === 200) {
+        setDirectors(Array.isArray(data) ? data : []);
+      } else {
+        toast.error(error || "Failed to fetch sales directors.");
+      }
+      setLoadingDirectors(false);
     };
 
-    const handleSaleDirectorChange = (event) => {
-        setSaleDirector(event.target.value);
-    };
+    loadDirectors();
+  }, []);
 
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-        if (action && company) {
-            setIsSubmitting(true); // Show loader
-            const { status, message, error } = await updateCompanyStatus(
-                company.partner_session_token,
-                action === 'accept' ? 'Active' : 'Rejected',
-                saleDirector // Send the selected sale director's session token
-            );
-            setIsSubmitting(false); // Hide loader
-            if (status === 200) {
-                toast.success(message);
-                onSubmit({ action, saleDirector });
-                navigate(-1); // Navigate back to the previous page
-            } else {
-                toast.error(error || "Failed to update company status.");
-            }
-        } else {
-            toast.error("Please select an action.");
-        }
-    };
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
-    return (
-        <div className="bg-white p-4 md:p-6 rounded-lg shadow-md">
-            <h2 className="text-lg md:text-xl font-semibold text-gray-700 mb-4">Your Action</h2>
-            <form onSubmit={handleSubmit}>
-                <p className="text-sm md:text-base text-gray-600 mb-4">Which kind of option do you want to choose?</p>
-                <div className="mb-4 md:mb-6">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center sm:space-x-6">
-                        <label className="inline-flex items-center mb-2 sm:mb-0">
-                            <input
-                                type="radio"
-                                value="accept"
-                                checked={action === 'accept'}
-                                onChange={handleActionChange}
-                                className="form-radio text-[#00936C]"
-                            />
-                            <span className="ml-2 text-gray-700">Accept & In-Progress</span>
-                        </label>
-                        <label className="inline-flex items-center">
-                            <input
-                                type="radio"
-                                value="reject"
-                                checked={action === 'reject'}
-                                onChange={handleActionChange}
-                                className="form-radio text-[#00936C]"
-                            />
-                            <span className="ml-2 text-gray-700">Reject this booking</span>
-                        </label>
-                    </div>
-                </div>
+    if (!action || !company) {
+      toast.error("Please select a decision first.");
+      return;
+    }
 
-                <p className="text-sm md:text-base text-gray-600 mb-2">Do you want to assign this company to any sale director or agent?</p>
-                <select
-                    value={saleDirector}
-                    onChange={handleSaleDirectorChange}
-                    className="w-full p-2 md:p3 border border-gray-300 rounded-md mb-4 md:mb-6"
-                    disabled={loading}
-                >
-                    <option value="">Select Sale Director</option>
-                    {directors.map((director) => (
-                        <option key={director.session_token} value={director.session_token}>
-                            {director.name}
-                        </option>
-                    ))}
-                </select>
+    setIsSubmitting(true);
 
-                <button
-                    type="submit"
-                    className="bg-[#00936C] text-white px-4 py-2 md:px-6 md:py-3 rounded-md w-full hover:bg-[#007a57] transition duration-300 flex items-center justify-center"
-                    disabled={isSubmitting} // Disable button while submitting
-                >
-                    {isSubmitting ? <div className="spinner"></div> : 'Submit your decision'}
-                </button>
-            </form>
-        </div>
+    const { status, message, error } = await updateCompanyStatus(
+      company.partner_session_token,
+      action === "approve" ? "Active" : "Rejected",
+      action === "approve" ? saleDirector : ""
     );
+
+    setIsSubmitting(false);
+
+    if (status === 200) {
+      toast.success(message || "Company profile decision submitted.");
+      onSubmit({ action, saleDirector });
+      navigate(-1);
+      return;
+    }
+
+    toast.error(error || "Failed to update company profile status.");
+  };
+
+  return (
+    <AppCard className="border-slate-200">
+      <form onSubmit={handleSubmit} className="app-content-stack">
+        <AppSectionHeader
+          title="Review Decision"
+          subtitle={`Current company: ${companyName}`}
+        />
+
+        <p className="text-sm text-ink-600">
+          Approve to activate this company profile, or reject to stop onboarding.
+        </p>
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          <DecisionTile
+            label="Approve and activate profile"
+            isSelected={action === "approve"}
+            onClick={() => setAction("approve")}
+          />
+          <DecisionTile
+            label="Reject profile"
+            isSelected={action === "reject"}
+            onClick={() => {
+              setAction("reject");
+              setSaleDirector("");
+            }}
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="sales-director"
+            className="mb-1 block text-xs font-semibold uppercase tracking-wide text-ink-300"
+          >
+            Sales Director (optional)
+          </label>
+          <select
+            id="sales-director"
+            value={saleDirector}
+            onChange={(event) => setSaleDirector(event.target.value)}
+            className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-slate-100"
+            disabled={loadingDirectors || action !== "approve"}
+          >
+            <option value="">Select Sales Director</option>
+            {directors.map((director) => (
+              <option key={director.session_token} value={director.session_token}>
+                {director.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex justify-end">
+          <AppButton
+            type="submit"
+            size="sm"
+            className="min-w-[180px]"
+            loading={isSubmitting}
+            loadingLabel="Applying..."
+            disabled={!action}
+          >
+            Apply Decision
+          </AppButton>
+        </div>
+      </form>
+    </AppCard>
+  );
+};
+
+const DecisionTile = ({ label, isSelected, onClick }) => {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-xl border px-3 py-3 text-left text-sm font-semibold transition ${
+        isSelected
+          ? "border-brand-500 bg-brand-50 text-brand-700"
+          : "border-slate-200 bg-white text-ink-700 hover:border-brand-200 hover:bg-slate-50"
+      }`}
+    >
+      <span className="flex items-center gap-2">
+        <span
+          className={`h-4 w-4 rounded-full border ${
+            isSelected ? "border-brand-600 bg-brand-500" : "border-slate-400"
+          }`}
+          aria-hidden="true"
+        />
+        {label}
+      </span>
+    </button>
+  );
 };
 
 export default ActionSection;

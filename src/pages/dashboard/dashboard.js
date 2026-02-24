@@ -1,56 +1,133 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
+import { FiArrowRight, FiBriefcase, FiDollarSign, FiUserCheck, FiUsers } from "react-icons/fi";
+import { AppCard, AppContainer } from "../../components/ui";
+
+const DASHBOARD_LINKS = [
+  {
+    to: "/access-profile",
+    title: "Access Profiles",
+    description: "Search and inspect partner profile records.",
+    priority: "Lookup",
+    icon: FiUsers,
+    accentClassName: "bg-sky-50 text-sky-700 border-sky-100",
+  },
+  {
+    to: "/pending-profiles",
+    title: "Pending Profiles",
+    description: "Review profiles waiting for approval.",
+    priority: "Approval",
+    icon: FiUserCheck,
+    accentClassName: "bg-amber-50 text-amber-700 border-amber-100",
+  },
+  {
+    to: "/approve-amounts",
+    title: "Approve Amounts",
+    description: "Review paid booking amount requests.",
+    priority: "Finance",
+    icon: FiDollarSign,
+    accentClassName: "bg-emerald-50 text-emerald-700 border-emerald-100",
+  },
+  {
+    to: "/approve-partners-amounts",
+    title: "Partner Amounts",
+    description: "Review partner payout and amount requests.",
+    priority: "Finance",
+    icon: FiBriefcase,
+    accentClassName: "bg-violet-50 text-violet-700 border-violet-100",
+  },
+];
 
 const Dashboard = () => {
-  // Retrieve user data from local storage
-  const userData = JSON.parse(localStorage.getItem("user-data"));
+  const userName = useMemo(() => {
+    try {
+      const userData = JSON.parse(localStorage.getItem("user-data") || "{}");
+      return userData?.name || "Admin";
+    } catch {
+      return "Admin";
+    }
+  }, []);
 
   return (
-    <main className="font-sans bg-gray-50">
-      <div className="flex w-[90%] flex-col min-h-screen mx-auto py-12">
-        <header className="mb-10">
-          <h1 className="text-2xl font-semibold text-gray-700">
-            Welcome {userData ? userData.name : "User"}!
-          </h1>
-          <p className="text-gray-500">Super Admin</p>
-        </header>
-        <main className="flex-grow">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Link
-              to="/access-profile"
-              className="p-4 bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-200"
-            >
-              <h3 className="text-lg font-medium text-gray-700">Access</h3>
-              <p className="text-gray-500 text-sm">Partners Profiles</p>
-            </Link>
-            <Link
-              to="/pending-profiles"
-              className="p-4 bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-200"
-            >
-              <h3 className="text-lg font-medium text-gray-700">Pending</h3>
-              <p className="text-gray-500 text-sm">Partner Profiles</p>
-            </Link>
-            <Link
-              to="/approve-amounts"
-              className="p-4 bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-200"
-            >
-              <h3 className="text-lg font-medium text-gray-700">Approve</h3>
-              <p className="text-gray-500 text-sm">Pending Amounts</p>
-            </Link>
-            <Link
-              to="/approve-partners-amounts"
-              className="p-4 bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-200"
-            >
-              <h3 className="text-lg font-medium text-gray-700">Approve</h3>
-              <p className="text-gray-500 text-sm">
-                Pending Amounts of Partners
+    <main className="app-main-shell pb-10">
+      <AppContainer className="app-content-stack py-6">
+        <AppCard className="border-slate-200 overflow-hidden">
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink-300">
+                Super Admin Workspace
               </p>
-            </Link>
+              <h1 className="mt-2 text-3xl font-semibold text-ink-900">
+                Welcome back, {userName}
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm text-ink-500">
+                Manage onboarding, compliance checks, and financial approval flows from a single
+                control center.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 sm:min-w-[280px]">
+              <SummaryTile label="Modules" value={`${DASHBOARD_LINKS.length}`} />
+              <SummaryTile label="Approval Flows" value="2" />
+              <SummaryTile label="Profile Queues" value="2" />
+              <SummaryTile label="Action Ready" value="Yes" />
+            </div>
           </div>
-        </main>
-      </div>
+        </AppCard>
+
+        <section className="app-content-stack">
+          <header className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-xl font-semibold text-ink-900">Operational Modules</h2>
+            <p className="text-sm text-ink-500">Use these modules to process daily admin tasks.</p>
+          </header>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {DASHBOARD_LINKS.map((link) => (
+              <ModuleCard key={link.to} link={link} />
+            ))}
+          </div>
+        </section>
+      </AppContainer>
     </main>
   );
 };
+
+const SummaryTile = React.memo(({ label, value }) => {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-300">{label}</p>
+      <p className="mt-1 text-lg font-semibold text-ink-900">{value}</p>
+    </div>
+  );
+});
+
+const ModuleCard = React.memo(({ link }) => {
+  const Icon = link.icon;
+  return (
+    <Link
+      to={link.to}
+      className="app-card group border-slate-200 p-5 transition duration-150 hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-md"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span
+          className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border ${link.accentClassName}`}
+        >
+          <Icon className="h-5 w-5" />
+        </span>
+        <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-ink-500">
+          {link.priority}
+        </span>
+      </div>
+
+      <h3 className="mt-4 text-lg font-semibold text-ink-900">{link.title}</h3>
+      <p className="mt-1 text-sm text-ink-500">{link.description}</p>
+
+      <div className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-brand-600">
+        Open Module
+        <FiArrowRight className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5" />
+      </div>
+    </Link>
+  );
+});
 
 export default Dashboard;

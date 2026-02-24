@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
-import Footer from "../../../../components/Footers/FooterForLoggedIn";
-import Header from "../../../../components/Headers/HeaderForAdminPanel";
-import NavigationBar from "../../../../components/NavigationBarForContent";
+import AdminPanelLayout from "../../../../components/layout/AdminPanelLayout";
 import BasicInfoForm from "./BasicInformationForm";
 import AirlineForm from "./AirlineForm";
 import TransportForm from "./TransportForm";
@@ -143,10 +141,12 @@ const CreatePackagePage = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f6f6f6] font-sans">
-      <Header />
-      <NavigationBar />
-      <div className="w-[85%] mx-auto mt-7 mb-10 flex-grow">
+    <AdminPanelLayout
+      title="Package Enrollment"
+      subtitle="Enter complete package details through each section."
+      mainClassName="py-5 bg-[#f6f6f6]"
+    >
+      <div className="mt-2 mb-10 flex-grow">
         <h3 className="text-lg font-medium mb-2 text-gray-600">
           Package Enrollment
         </h3>
@@ -199,8 +199,7 @@ const CreatePackagePage = () => {
         <div className="w-[85%] lg:w-full mx-auto font-sans mt-5"></div>
         <div className="w-full mx-auto">{renderTabContent()}</div>
       </div>
-      <Footer />
-    </div>
+    </AdminPanelLayout>
   );
 };
 

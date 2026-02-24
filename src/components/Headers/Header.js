@@ -1,83 +1,86 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { FaBell } from "react-icons/fa";
+import { useLocation, useNavigate } from "react-router-dom";
 import avatar1 from "../../assets/Avatar.svg";
 import huzlogo from "../../assets/Components/huzlogo.svg";
-import { useLocation } from "react-router-dom";
+import { AppButton, AppContainer } from "../ui";
 
 const Header = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState(["1", "2", "3"]); // This will hold the notifications
+  const [notifications] = useState([]);
 
   const profileRef = useRef(null);
   const notificationsRef = useRef(null);
-  const location = useLocation(); // Hook to get the current route
-
-  const handleClickOutside = (event) => {
-    if (
-      profileRef.current &&
-      !profileRef.current.contains(event.target) &&
-      notificationsRef.current &&
-      !notificationsRef.current.contains(event.target)
-    ) {
-      setIsProfileOpen(false);
-      setIsNotificationsOpen(false);
-    }
-  };
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        profileRef.current &&
+        !profileRef.current.contains(event.target) &&
+        notificationsRef.current &&
+        !notificationsRef.current.contains(event.target)
+      ) {
+        setIsProfileOpen(false);
+        setIsNotificationsOpen(false);
+      }
+    };
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
-  const toggleProfileMenu = () => {
-    setIsProfileOpen((prev) => !prev);
-    if (isNotificationsOpen) setIsNotificationsOpen(false);
-  };
+  const isLoginRoute = location.pathname === "/";
 
-  const toggleNotificationsMenu = () => {
-    setIsNotificationsOpen((prev) => !prev);
-    if (isProfileOpen) setIsProfileOpen(false);
+  const handleSignOut = () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    navigate("/", { replace: true });
   };
 
   return (
-    <div className=" bg-white shadow-md font-kd">
-      <header className="flex items-center justify-between py-4 w-[90%] mx-auto">
-        {/* Logo */}
-        <div className="flex items-end space-x-4">
-          <a>
-            <img src={huzlogo} alt="HajjUmrah" className="h-8" />
-          </a>
-        </div>
+    <div className="app-header-shell font-kd">
+      <AppContainer className="flex items-center justify-between py-4">
+        <button
+          type="button"
+          onClick={() => navigate(isLoginRoute ? "/" : "/super-admin-dashboard")}
+          className="flex items-end space-x-4"
+          aria-label="Go to dashboard"
+        >
+          <img src={huzlogo} alt="HajjUmrah" className="h-8" />
+        </button>
 
-        {/* Conditional rendering: Hide these on the home page */}
-        {location.pathname !== "/" && (
+        {!isLoginRoute ? (
           <div className="flex items-center space-x-4">
-            {/* Notifications */}
             <div className="relative" ref={notificationsRef}>
-              <div className="relative">
-                <FaBell
-                  className="h-6 w-6 text-gray-600 cursor-pointer"
-                  onClick={toggleNotificationsMenu}
-                />
-                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1 py-0.5 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
-                  {notifications.length > 0 ? notifications.length : 0}
+              <button
+                type="button"
+                className="relative flex items-center justify-center"
+                onClick={() => {
+                  setIsNotificationsOpen((prev) => !prev);
+                  if (isProfileOpen) setIsProfileOpen(false);
+                }}
+              >
+                <FaBell className="h-6 w-6 text-ink-500" />
+                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-[#dc2626] rounded-full">
+                  {notifications.length}
                 </span>
-              </div>
-              {isNotificationsOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 shadow-lg rounded-lg z-10">
+              </button>
+
+              {isNotificationsOpen ? (
+                <div className="absolute right-0 mt-2 w-72 app-panel z-20 overflow-hidden">
                   {notifications.length === 0 ? (
-                    <div className="p-4 text-center text-gray-500">
-                      No new notifications
-                    </div>
+                    <div className="p-4 text-center text-sm text-ink-500">No new notifications</div>
                   ) : (
                     <ul className="py-2">
                       {notifications.map((notification, index) => (
                         <li
                           key={index}
-                          className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                          className="px-4 py-2 hover:bg-slate-50 cursor-pointer text-sm text-ink-700"
                         >
                           {notification}
                         </li>
@@ -85,42 +88,45 @@ const Header = () => {
                     </ul>
                   )}
                 </div>
-              )}
+              ) : null}
             </div>
 
-            {/* Divider */}
-            <div className="w-px bg-gray-300 h-6 mx-2"></div>
+            <div className="w-px bg-slate-300 h-6 mx-1" />
 
-            {/* Profile */}
             <div className="relative" ref={profileRef}>
-              <div className="relative">
-                <img
-                  src={avatar1}
-                  alt="User Profile"
-                  className="h-9 w-9 rounded-full"
-                  onClick={toggleProfileMenu}
-                />
-                <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white"></span>
-              </div>
-              {isProfileOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 shadow-lg rounded-lg z-10">
-                  <ul className="py-2">
-                    <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                      Profile
-                    </li>
-                    <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                      Settings
-                    </li>
-                    <li className="px-4 py-2 hover:bg-gray-100 cursor-pointer">
-                      Logout
+              <button
+                type="button"
+                className="relative"
+                onClick={() => {
+                  setIsProfileOpen((prev) => !prev);
+                  if (isNotificationsOpen) setIsNotificationsOpen(false);
+                }}
+              >
+                <img src={avatar1} alt="User Profile" className="h-9 w-9 rounded-full" />
+                <span className="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-brand-500 ring-2 ring-white" />
+              </button>
+
+              {isProfileOpen ? (
+                <div className="absolute right-0 mt-2 w-52 app-panel z-20">
+                  <ul className="py-2 text-sm text-ink-700">
+                    <li className="px-4 py-2 hover:bg-slate-50 cursor-pointer">Profile</li>
+                    <li className="px-4 py-2 hover:bg-slate-50 cursor-pointer">Settings</li>
+                    <li className="px-4 py-2">
+                      <AppButton
+                        onClick={handleSignOut}
+                        variant="secondary"
+                        className="w-full justify-center"
+                      >
+                        Logout
+                      </AppButton>
                     </li>
                   </ul>
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
-        )}
-      </header>
+        ) : null}
+      </AppContainer>
     </div>
   );
 };

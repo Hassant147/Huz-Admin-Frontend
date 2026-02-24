@@ -1,193 +1,230 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate from react-router-dom
-import { fetchPaidBookings } from "../../../../utility/Super-Admin-Api"; // Import your API function
-import NoContent from "../../../../components/NoContent"; // Import NoContent component
-import SearchBar from "./SearchBar"; // Import the SearchBar component
-import BackButton from "../../../../components/BackButton";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { fetchPaidBookings } from "../../../../utility/Super-Admin-Api";
+import { AppButton, AppCard, AppEmptyState, AppSectionHeader } from "../../../../components/ui";
+import SearchBar from "./SearchBar";
+import errorIcon from "../../../../assets/error.svg";
+import SuperAdminModuleShell from "../../components/SuperAdminModuleShell";
+import SuperAdminPagination from "../../components/SuperAdminPagination";
+import SuperAdminMetricCard from "../../components/SuperAdminMetricCard";
+import SuperAdminInfoTile from "../../components/SuperAdminInfoTile";
+import usePaginatedRecords from "../../components/usePaginatedRecords";
+import Loader from "../../../../components/loader";
+import { formatCurrencyPKR, formatDateTime } from "../../components/superAdminFormatters";
+
+const ITEMS_PER_PAGE = 6;
 
 const ApproveAmountsPage = () => {
-  const [bookings, setBookings] = useState([]); // State to store the fetched bookings
-  const [filteredBookings, setFilteredBookings] = useState([]); // State for filtered bookings
-  const [loading, setLoading] = useState(true); // State for loading status
-  const [error, setError] = useState(null); // State for error handling
-  const [currentPage, setCurrentPage] = useState(1); // State for current page
-  const itemsPerPage = 5; // Number of items per page
+  const [bookings, setBookings] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-  const navigate = useNavigate(); // Initialize useNavigate hook
+  const filteredBookings = useMemo(() => {
+    if (!selectedDate) {
+      return bookings;
+    }
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const { status, data, error } = await fetchPaidBookings();
+    const selectedDateString = selectedDate.toLocaleDateString();
+    return bookings.filter(
+      (booking) => new Date(booking.order_time).toLocaleDateString() === selectedDateString
+    );
+  }, [bookings, selectedDate]);
 
-      if (status === 200 && data.length > 0) {
-        setBookings(data);
-        setFilteredBookings(data); // Initially, show all bookings
-      } else if (status === 404) {
-        setBookings([]);
-        setFilteredBookings([]);
-      } else {
-        setError(error || "An error occurred while fetching data.");
-      }
-      setLoading(false);
-    };
+  const { currentPage, totalPages, currentItems, onPageChange, resetPagination } =
+    usePaginatedRecords(filteredBookings, ITEMS_PER_PAGE);
 
-    fetchData();
+  const loadBookings = useCallback(async () => {
+    setLoading(true);
+    setError("");
+
+    const { status, data, error: requestError } = await fetchPaidBookings();
+
+    if (status === 200 && Array.isArray(data)) {
+      setBookings(data);
+    } else if (status === 404) {
+      setBookings([]);
+    } else {
+      setBookings([]);
+      setError(requestError || "An error occurred while fetching data.");
+    }
+
+    setLoading(false);
   }, []);
 
-  const handleSearch = (date) => {
-    const filtered = bookings.filter(
-      (booking) =>
-        new Date(booking.order_time).toLocaleDateString() ===
-        date.toLocaleDateString()
-    );
-    setFilteredBookings(filtered);
-    setCurrentPage(1); // Reset to the first page after filtering
-  };
+  useEffect(() => {
+    loadBookings();
+  }, [loadBookings]);
 
-  const handleClearFilter = () => {
-    setFilteredBookings(bookings); // Reset to show all bookings
-    setCurrentPage(1); // Reset to the first page
-  };
+  const clearFilters = useCallback(() => {
+    setSelectedDate(null);
+    resetPagination();
+  }, [resetPagination]);
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-[80vh]">
-        <div className="loader"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return <div className="text-center text-red-500">Error: {error}</div>;
-  }
-
-  // Calculate the index range for the current page
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredBookings.slice(
-    indexOfFirstItem,
-    indexOfLastItem
+  const handleDateChange = useCallback(
+    (date) => {
+      setSelectedDate(date);
+      resetPagination();
+    },
+    [resetPagination]
   );
 
-  // Function to handle page changes
-  const handlePageChange = (pageNumber) => {
-    setCurrentPage(pageNumber);
-  };
+  const totalAmount = useMemo(() => {
+    return filteredBookings.reduce((sum, booking) => sum + Number(booking.total_price || 0), 0);
+  }, [filteredBookings]);
 
-  // Function to handle clicking on "Action" button
-  const handleActionClick = (booking) => {
-    navigate("/booking-details", { state: { booking } });
-  };
+  const selectedDateLabel = useMemo(() => {
+    if (!selectedDate) {
+      return "All dates";
+    }
+    return selectedDate.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }, [selectedDate]);
 
-  // Calculate total pages
-  const totalPages = Math.ceil(filteredBookings.length / itemsPerPage);
+  const hasActiveFilter = Boolean(selectedDate);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="w-[90%] mx-auto">
-        <BackButton />
-        {/* Search Bar and Clear Filter Button */}
-        <div className="flex justify-between items-center mb-4">
-          <SearchBar onSearch={handleSearch} />
-          <button
-            onClick={handleClearFilter}
-            className="text-[#00936C] font-semibold border border-[#00936C] rounded px-4 py-2 hover:bg-[#00936C] hover:text-white"
+    <SuperAdminModuleShell
+      title="Approve Amounts"
+      subtitle="Review paid booking requests and move them to detailed action."
+      showBackButton={false}
+      toolbar={
+        <div className="flex flex-wrap items-end gap-2 sm:gap-3">
+          <SearchBar selectedDate={selectedDate} onDateChange={handleDateChange} />
+          <AppButton
+            variant="outline"
+            size="sm"
+            onClick={clearFilters}
+            disabled={!hasActiveFilter}
+            className="min-w-[120px]"
           >
             Clear Filter
-          </button>
+          </AppButton>
         </div>
+      }
+    >
+      {loading ? (
+        <AppCard className="min-h-[320px] flex items-center justify-center">
+          <Loader />
+        </AppCard>
+      ) : error ? (
+        <AppCard>
+          <AppEmptyState
+            icon={<img src={errorIcon} alt="" className="h-6 w-6" />}
+            title="Unable to load bookings"
+            message={error}
+            action={
+              <AppButton size="sm" onClick={loadBookings}>
+                Retry
+              </AppButton>
+            }
+          />
+        </AppCard>
+      ) : filteredBookings.length > 0 ? (
+        <>
+          <div className="app-grid-3">
+            <SuperAdminMetricCard
+              title="Total Requests"
+              value={bookings.length.toLocaleString()}
+              hint="Paid booking submissions"
+            />
+            <SuperAdminMetricCard
+              title="Matching Results"
+              value={filteredBookings.length.toLocaleString()}
+              hint={`Filter: ${selectedDateLabel}`}
+            />
+            <SuperAdminMetricCard
+              title="Total Amount"
+              value={formatCurrencyPKR(totalAmount)}
+              hint={`${currentItems.length} records on current page`}
+            />
+          </div>
 
-        {filteredBookings.length > 0 ? (
-          <>
-            <div className="grid grid-cols-1 gap-6 w-full">
-              {currentItems.map((booking, index) => (
-                <div
-                  key={index}
-                  className="flex flex-col lg:flex-row items-center lg:items-start p-4 bg-white rounded-lg shadow-sm border border-gray-200 w-full"
-                >
-                  {/* Partner Details */}
-                  <div className="w-full lg:w-[20%] mb-4 lg:mb-0">
-                    <p className="text-xs text-gray-500">User name</p>
-                    <h2 className="text-sm text-gray-700">
-                      {booking.user_fullName || "Name not provided"}
-                    </h2>
-                  </div>
+          <AppCard className="border-slate-200">
+            <AppSectionHeader
+              title="Paid Booking Requests"
+              subtitle={`Showing ${currentItems.length} of ${filteredBookings.length} records`}
+            />
+          </AppCard>
 
-                  {/* Booking Number */}
-                  <div className="w-full lg:w-[15%] mb-4 lg:mb-0 lg:border-x lg:text-center">
-                    <p className="text-xs text-gray-500">Booking Number</p>
-                    <a href="#" className="text-blue-500 underline">
-                      {booking.booking_number}
-                    </a>
-                  </div>
+          <div className="app-content-stack">
+            {currentItems.map((booking) => (
+              <AppCard key={booking.booking_number} className="border-slate-200">
+                <article className="app-content-stack">
+                  <header className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-wide text-ink-300">
+                        Booking {booking.booking_number}
+                      </p>
+                      <h3 className="mt-1 text-base font-semibold text-ink-900">
+                        {booking.user_fullName || "Name not provided"}
+                      </h3>
+                    </div>
 
-                  {/* Raised Date */}
-                  <div className="w-full lg:w-[15%] mb-4 lg:mb-0 lg:text-center">
-                    <p className="text-xs text-gray-500">Raised date</p>
-                    <p className="text-sm text-gray-700">
-                      {new Date(booking.order_time).toLocaleDateString()}
-                    </p>
-                  </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="app-status-pill">{booking.booking_status || "Paid"}</span>
+                      <AppButton
+                        size="sm"
+                        onClick={() => navigate("/booking-details", { state: { booking } })}
+                      >
+                        Review
+                      </AppButton>
+                    </div>
+                  </header>
 
-                  {/* Booking Amount */}
-                  <div className="w-full lg:w-[15%] mb-4 lg:mb-0 lg:border-x lg:text-center">
-                    <p className="text-xs text-gray-500">Booking Amount</p>
-                    <p className="text-sm text-gray-700">
-                      {booking.total_price}
-                    </p>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <SuperAdminInfoTile label="Raised On" value={formatDateTime(booking.order_time)} />
+                    <SuperAdminInfoTile
+                      label="Total Amount"
+                      value={formatCurrencyPKR(booking.total_price)}
+                    />
+                    <SuperAdminInfoTile
+                      label="Payment Method"
+                      value={booking.payment_type || "Not available"}
+                    />
+                    <SuperAdminInfoTile
+                      label="Status"
+                      value={booking.booking_status || "Not available"}
+                    />
                   </div>
+                </article>
+              </AppCard>
+            ))}
+          </div>
 
-                  {/* Payment Type */}
-                  <div className="w-full lg:w-[15%] mb-4 lg:mb-0 lg:text-center">
-                    <p className="text-xs text-gray-500">Payment Type</p>
-                    <p className="text-sm">{booking.payment_type}</p>
-                  </div>
-                  {/* Booking Status */}
-                  <div className="w-full lg:w-[15%] mb-4 lg:mb-0 lg:border-l lg:text-center">
-                    <p className="text-xs text-gray-500">Booking Status</p>
-                    <p className="text-sm text-gray-700">
-                      {booking.booking_status}
-                    </p>
-                  </div>
-
-                  {/* Action Button */}
-                  <div className="w-full lg:w-auto text-right lg:text-left lg:flex-1 items-center justify-end space-x-2 lg:space-x-16 lg:flex">
-                    <button
-                      className="text-[#00936C] font-semibold border border-[#00936C] rounded px-2 lg:px-3 py-1 hover:bg-[#00936C] hover:text-white"
-                      onClick={() => handleActionClick(booking)}
-                    >
-                      Action
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Pagination */}
-            <div className="flex justify-end mt-8">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (pageNumber) => (
-                  <button
-                    key={pageNumber}
-                    className={`px-3 py-1 mx-1 rounded ${
-                      currentPage === pageNumber
-                        ? "bg-[#00936C] text-white"
-                        : "bg-gray-200 text-gray-700"
-                    }`}
-                    onClick={() => handlePageChange(pageNumber)}
-                  >
-                    {pageNumber}
-                  </button>
-                )
-              )}
-            </div>
-          </>
-        ) : (
-          <NoContent />
-        )}
-      </div>
-    </div>
+          <SuperAdminPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
+          />
+        </>
+      ) : (
+        <AppCard>
+          <AppEmptyState
+            icon={<img src={errorIcon} alt="" className="h-6 w-6" />}
+            title={hasActiveFilter ? "No results for selected date" : "No paid bookings"}
+            message={
+              hasActiveFilter
+                ? "Try another date or clear the filter to view all requests."
+                : "Paid booking requests will appear here."
+            }
+            action={
+              hasActiveFilter ? (
+                <AppButton size="sm" variant="outline" onClick={clearFilters}>
+                  Clear Filter
+                </AppButton>
+              ) : null
+            }
+          />
+        </AppCard>
+      )}
+    </SuperAdminModuleShell>
   );
 };
 
 export default ApproveAmountsPage;
+

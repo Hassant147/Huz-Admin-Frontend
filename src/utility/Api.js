@@ -1,8 +1,17 @@
 import axios from "axios";
 
+const resolveApiBaseURL = () => {
+  const configuredURL = `${process.env.REACT_APP_API_BASE_URL || ""}`.trim();
+  const fallbackURL = "http://127.0.0.1:8000";
+  const normalizedBaseURL = configuredURL || fallbackURL;
+  return normalizedBaseURL.replace(/\/+$/, "");
+};
+
+const API_BASE_URL = resolveApiBaseURL();
+
 // Create an Axios instance with the base URL and default headers
 const apiClient = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL,
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
     Authorization: `${process.env.REACT_APP_AUTH_TOKEN}`,
@@ -897,7 +906,7 @@ export const updateTransportDetails = async (formData) => {
 
   try {
     const response = await axios.put(
-      "http://13.213.42.27/bookings/manage_booking_hotel_or_transport_details/",
+      `${process.env.REACT_APP_API_BASE_URL}/bookings/manage_booking_hotel_or_transport_details/`,
       JSON.stringify(formData),
       config
     );
@@ -1177,4 +1186,3 @@ export const getPackagesDetail = async (packageId) => {
     }
   }
 };
-

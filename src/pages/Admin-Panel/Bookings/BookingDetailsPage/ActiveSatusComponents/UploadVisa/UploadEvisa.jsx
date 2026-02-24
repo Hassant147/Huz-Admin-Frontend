@@ -1,8 +1,6 @@
 import React, { useContext, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import Header from "../../../../../../components/Headers/HeaderForAdminPanel";
-import NavigationBar from "../../../../../../components/NavigationBarForContent";
-import Footer from "../../../../../../components/Footers/FooterForLoggedIn";
+import AdminPanelLayout from "../../../../../../components/layout/AdminPanelLayout";
 import UploadVisa from "./UploadVisa";
 import Sidebar from '../../components/Sidebar';
 import { BookingContext } from '../../../../../../context/BookingContext';
@@ -30,10 +28,12 @@ const UploadEvisa = () => {
   }
 
   return (
-    <div className="bg-[#f6f6f6]">
-      <Header />
-      <NavigationBar />
-      <div className="pb-10 w-[90%] mx-auto space-y-10">
+    <AdminPanelLayout
+      title="Booking Detail"
+      subtitle="Upload and review e-visa documents for this booking."
+      mainClassName="py-5 bg-[#f6f6f6]"
+    >
+      <div className="pb-10 space-y-10">
         <div className="mt-10 mx-auto flex items-center">
           <div className="block relative">
             <h1 className="font-k2d font-Normal text-2xl text-[#4B465C]">
@@ -53,8 +53,7 @@ const UploadEvisa = () => {
           </div>
         </div>
       </div>
-      <Footer />
-    </div>
+    </AdminPanelLayout>
   );
 };
 

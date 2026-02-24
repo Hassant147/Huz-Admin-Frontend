@@ -1,79 +1,109 @@
-import React, { useContext } from "react";
+import React, { useContext, useMemo } from "react";
 import { NumericFormat } from "react-number-format";
 import { useNavigate } from "react-router-dom";
 import { CurrencyContext } from "../../../../../utility/CurrencyContext";
+import { AppButton, AppCard, AppSectionHeader } from "../../../../../components/ui";
+import { withFallback } from "./bookingDetailsUtils";
+
+const FEATURE_MAP = [
+  { key: "is_visa_included", label: "Visa" },
+  { key: "is_insurance_included", label: "Insurance" },
+  { key: "is_airport_reception_included", label: "Airport Reception" },
+  { key: "is_breakfast_included", label: "Breakfast" },
+  { key: "is_lunch_included", label: "Lunch" },
+  { key: "is_dinner_included", label: "Dinner" },
+];
 
 const PackageDetails = ({ booking }) => {
   const navigate = useNavigate();
   const { selectedCurrency, exchangeRates } = useContext(CurrencyContext);
 
+  const convertedCost = useMemo(() => {
+    const baseCost = Number(booking?.base_cost || 0);
+    if (!exchangeRates?.[selectedCurrency] || !exchangeRates?.PKR) {
+      return baseCost;
+    }
+    return (baseCost / exchangeRates.PKR) * exchangeRates[selectedCurrency];
+  }, [booking, exchangeRates, selectedCurrency]);
+
+  const includedFeatures = useMemo(() => {
+    return FEATURE_MAP.filter((feature) => booking?.[feature.key]).map((feature) => feature.label);
+  }, [booking]);
+
   if (!booking) {
-    return null; // or a loader or placeholder
+    return null;
   }
 
-  const {
-    package_name,
-    huz_token,
-    base_cost,
-    mecca_nights,
-    madinah_nights,
-    is_visa_included,
-    is_airport_reception_included,
-    is_insurance_included,
-    is_breakfast_included,
-    is_lunch_included,
-    is_dinner_included,
-  } = booking;
-
-  const convertedCost = exchangeRates[selectedCurrency]
-    ? (base_cost / exchangeRates["PKR"]) * exchangeRates[selectedCurrency]
-    : base_cost;
-
   return (
-    <div className="p-4 text-[#484848] bg-white border border-gray-200 shadow-sm rounded-lg flex items-center justify-between">
-      <div>
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <h2 className="font-semibold xl:text-[18px]">{package_name}</h2>
-            <NumericFormat
-              value={convertedCost}
-              displayType={"text"}
-              thousandSeparator
-              prefix={`${selectedCurrency} `}
-              decimalScale={2}
-              fixedDecimalScale={true}
-              className="font-semibold text-[16px]"
-            />
-          </div>
-          {/* only for mobile */}
-          <button className="md:hidden border px-2 flex items-center justify-center font-semibold border-[#00936C] text-[#00936C] w-[62px] bg-green-100 py-[4px] rounded-md text-[13px]">
-            View
-          </button>
-        </div>
-        <div className="text-sm mt-3 lg:mt-1 md:mr-2 lg:mr-0">
-          <span className="mr-2">Mecca Nights {mecca_nights}</span> -
-          <span className="mx-2">Madinah Nights {madinah_nights}</span> -
-          <span className="mx-2">{is_visa_included && "Visa"}</span> -
-          <span className="mx-2">{is_insurance_included && "Insurance"}</span> -
-          <span className="mx-2">
-            {is_airport_reception_included && "Airport Reception"}
-          </span>{" "}
-          -<span className="mx-2">{is_breakfast_included && "Breakfast"}</span>{" "}
-          -<span className="mx-2">{is_lunch_included && "Lunch"}</span> -
-          <span className="mx-2">{is_dinner_included && "Dinner"}</span>
+    <AppCard className="border-slate-200">
+      <div className="app-content-stack">
+        <AppSectionHeader
+          title={withFallback(booking.package_name, "Package")}
+          subtitle={`${withFallback(booking.mecca_nights, 0)} nights Makkah - ${withFallback(
+            booking.madinah_nights,
+            0
+          )} nights Madinah`}
+          action={
+            <AppButton
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                navigate(`/detailpage/?packageId=${booking.huz_token}`, {
+                  state: { huz_token: booking.huz_token },
+                })
+              }
+            >
+              View Package
+            </AppButton>
+          }
+        />
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <InfoTile
+            label="Base Cost"
+            value={
+              <NumericFormat
+                value={convertedCost}
+                displayType="text"
+                thousandSeparator
+                prefix={`${selectedCurrency} `}
+                decimalScale={2}
+                fixedDecimalScale
+                className="text-base font-semibold text-brand-600"
+              />
+            }
+          />
+          <InfoTile
+            label="Included Features"
+            value={
+              includedFeatures.length ? (
+                <div className="flex flex-wrap gap-1">
+                  {includedFeatures.map((feature) => (
+                    <span
+                      key={feature}
+                      className="rounded-full bg-brand-50 px-2 py-1 text-[11px] font-semibold text-brand-700"
+                    >
+                      {feature}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <span className="text-sm text-ink-500">No inclusions listed</span>
+              )
+            }
+          />
         </div>
       </div>
-      <button
-        onClick={() =>
-          navigate(`/detailpage/?packageId=${huz_token}`, {
-            state: { huz_token },
-          })
-        }
-        className="hidden md:flex border px-2 items-center justify-center font-semibold border-[#00936C] text-[#00936C] w-[62px] bg-green-100 py-[4px] rounded-md text-[13px]"
-      >
-        View
-      </button>
-    </div>
+    </AppCard>
+  );
+};
+
+const InfoTile = ({ label, value }) => {
+  return (
+    <article className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-ink-300">{label}</p>
+      <div className="mt-1 text-sm text-ink-700">{value}</div>
+    </article>
   );
 };
 

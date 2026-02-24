@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
-import 'react-circular-progressbar/dist/styles.css';
-import OpenComplaintsIcon from '../../../../assets/DB/Icon.svg';
-import InProgressIcon from '../../../../assets/DB/Icon-1.svg';
-import SolvedComplaintsIcon from '../../../../assets/DB/Icon-2.svg';
-import { fetchOverallComplaintsCounts } from '../../../../utility/Api';
+import React, { useEffect, useState } from "react";
+import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
+import "react-circular-progressbar/dist/styles.css";
+import OpenComplaintsIcon from "../../../../assets/DB/Icon.svg";
+import InProgressIcon from "../../../../assets/DB/Icon-1.svg";
+import SolvedComplaintsIcon from "../../../../assets/DB/Icon-2.svg";
+import { fetchOverallComplaintsCounts } from "../../../../utility/Api";
+import { AppCard } from "../../../../components/ui";
+import { getPartnerSessionToken } from "../../../../utility/session";
 
 const SupportTracker = () => {
   const [data, setData] = useState({
@@ -16,20 +18,19 @@ const SupportTracker = () => {
   });
 
   useEffect(() => {
-    const profile = JSON.parse(localStorage.getItem("SignedUp-User-Profile"));
-
     const getOverallComplaintsCounts = async () => {
       try {
-        const apiData = await fetchOverallComplaintsCounts(profile.partner_session_token);
+        const apiData = await fetchOverallComplaintsCounts(getPartnerSessionToken());
         const totalTickets = apiData.Open + apiData.InProgress + apiData.Solved + apiData.Close;
-        const closeOrCompleted = Math.round((apiData.Close / totalTickets) * 100);
+        const closeOrCompleted =
+          totalTickets > 0 ? Math.round((apiData.Close / totalTickets) * 100) : 0;
 
         setData({
-          totalTickets: totalTickets,
+          totalTickets,
           openComplaints: apiData.Open,
           inProgressComplaints: apiData.InProgress,
           solvedComplaints: apiData.Solved,
-          closeOrCompleted: closeOrCompleted,
+          closeOrCompleted,
         });
       } catch (error) {
         console.error("Error fetching data from API", error);
@@ -40,50 +41,56 @@ const SupportTracker = () => {
   }, []);
 
   return (
-    <div className="flex items-center h-full px-10 shadow-md rounded-lg bg-white">
+    <AppCard className="flex h-full items-center gap-4 border-slate-200">
       <div className="flex-1">
         <div className="text-2xl font-semibold text-gray-600">
           {data.totalTickets}
-          <p className="text-base font-thin text-gray-500">Total Tickets</p>
+          <p className="text-base font-normal text-gray-500">Total Tickets</p>
         </div>
-        <div className="mt-6">
-          <div className="flex items-start mb-4">
-            <img src={OpenComplaintsIcon} alt="Open Complaints" className="mr-2" />
-            <div className="flex flex-col">
-              <span className="text-lg font-normal text-gray-600">Open Complaints</span>
-              <span className="mt-1 font-thin text-gray-500 text-sm">{data.openComplaints}</span>
-            </div>
-          </div>
-          <div className="flex items-start mb-4">
-            <img src={InProgressIcon} alt="In Progress Complaints" className="mr-2" />
-            <div className="flex flex-col">
-              <span className="text-lg font-normal text-gray-600">In Progress Complaints</span>
-              <span className="mt-1 font-thin text-gray-500 text-sm">{data.inProgressComplaints}</span>
-            </div>
-          </div>
-          <div className="flex items-start mb-4">
-            <img src={SolvedComplaintsIcon} alt="Solved Complaints" className="mr-2" />
-            <div className="flex flex-col">
-              <span className="text-lg font-normal text-gray-600">Solved Complaints</span>
-              <span className="mt-1 font-thin text-gray-500 text-sm">{data.solvedComplaints}</span>
-            </div>
-          </div>
+        <div className="mt-5 space-y-3">
+          <TrackerRow
+            icon={OpenComplaintsIcon}
+            label="Open Complaints"
+            value={data.openComplaints}
+          />
+          <TrackerRow
+            icon={InProgressIcon}
+            label="In Progress Complaints"
+            value={data.inProgressComplaints}
+          />
+          <TrackerRow
+            icon={SolvedComplaintsIcon}
+            label="Solved Complaints"
+            value={data.solvedComplaints}
+          />
         </div>
       </div>
-      <div className="relative w-48 h-48 ml-5">
+      <div className="relative h-40 w-40 shrink-0 md:h-44 md:w-44">
         <CircularProgressbar
           value={data.closeOrCompleted}
           styles={buildStyles({
-            textSize: '16px',
-            pathColor: '#00936C',
-            textColor: '#333',
-            trailColor: '#f3f4f6',
+            textSize: "16px",
+            pathColor: "#00936C",
+            textColor: "#333",
+            trailColor: "#f3f4f6",
           })}
         />
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-xl font-semibold">{data.closeOrCompleted}%</span>
           <span className="text-xs text-gray-500">Close or Completed</span>
         </div>
+      </div>
+    </AppCard>
+  );
+};
+
+const TrackerRow = ({ icon, label, value }) => {
+  return (
+    <div className="flex items-start">
+      <img src={icon} alt={label} className="mr-2" />
+      <div className="flex flex-col">
+        <span className="text-base font-medium text-gray-700">{label}</span>
+        <span className="text-sm text-gray-500">{value}</span>
       </div>
     </div>
   );

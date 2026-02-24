@@ -1,14 +1,16 @@
-import React from 'react';
+import React from "react";
+import { AppContainer } from "../ui";
+
 const Footer = () => {
-    return (
-        <footer className="py-4 bg-white shadow-custom-shadow1 font-sans">
-            <div className="flex items-center justify-center space-x-1 lg:w-full w-[85%] mx-auto">
-                <span className="text-[#484848] text-center font-thin text-sm">
-                    By signing up you agree to the <span className="text-[#00936C]">Terms of Services</span> and <span className="text-[#00936C]">Privacy Policy</span>.
-                </span>
-            </div>
-        </footer>
-    );
+  return (
+    <footer className="app-footer-shell py-4">
+      <AppContainer>
+        <p className="text-center text-sm text-ink-500">
+          By signing up you agree to the <span className="text-brand-600">Terms of Services</span> and <span className="text-brand-600">Privacy Policy</span>.
+        </p>
+      </AppContainer>
+    </footer>
+  );
 };
 
 export default Footer;

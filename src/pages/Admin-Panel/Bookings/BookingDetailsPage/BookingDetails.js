@@ -1,9 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import CustomLoader from "../../../../components/loader";
-import Header from "../../../../components/Headers/HeaderForAdminPanel";
-import NavigationBar from "../../../../components/NavigationBarForContent";
-import Footer from "../../../../components/Footers/FooterForLoggedIn";
+import AdminPanelLayout from "../../../../components/layout/AdminPanelLayout";
 import { BookingContext } from "../../../../context/BookingContext";
 import Pending from "./Pending";
 import Objection from "./Objection";
@@ -186,20 +184,19 @@ const BookingDetails = () => {
   }, [bookingNumber, fetchBookingDetails]);
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
-      <NavigationBar />
-      <main className="flex-grow bg-[#F9F9F9]">
-        <div className="w-[90%] mx-auto pt-10">
-          <BookingDetailsContent
-            booking={booking}
-            loading={loading}
-            error={error}
-          />
-        </div>
-      </main>
-      <Footer />
-    </div>
+    <AdminPanelLayout
+      title="Booking Details"
+      subtitle="Review booking information and process status actions."
+      mainClassName="py-5 bg-[#F9F9F9]"
+    >
+      <div className="pt-2">
+        <BookingDetailsContent
+          booking={booking}
+          loading={loading}
+          error={error}
+        />
+      </div>
+    </AdminPanelLayout>
   );
 };
 

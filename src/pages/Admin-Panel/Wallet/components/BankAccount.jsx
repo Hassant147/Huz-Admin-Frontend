@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import BankAccountImage from "../../../../assets/BankAccount.svg";
 import DeleteIcon from "../../../../assets/DeleteIcon.svg";
-import { ToggleBankAccount } from "../wallet";
+import { ToggleBankAccount } from "../context";
 import Select from "react-select";
 import Loader from "../../../../components/loader";
 import banks from "./banks.json";

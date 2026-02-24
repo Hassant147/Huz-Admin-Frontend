@@ -3,7 +3,14 @@ import FormData from "form-data";
 
 // Ensure the token is correctly formatted without spaces
 const authHeader = `${process.env.REACT_APP_AUTH_TOKEN}`;
-const baseURL = process.env.REACT_APP_API_BASE_URL;
+const resolveApiBaseURL = () => {
+  const configuredURL = `${process.env.REACT_APP_API_BASE_URL || ""}`.trim();
+  const fallbackURL = "http://127.0.0.1:8000";
+  const normalizedBaseURL = configuredURL || fallbackURL;
+  return normalizedBaseURL.replace(/\/+$/, "");
+};
+
+const baseURL = resolveApiBaseURL();
 
 const config = {
   headers: {

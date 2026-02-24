@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useState } from "react";
 import Select from "react-select";
 import { BiErrorAlt } from "react-icons/bi";
 import { addWithdrawRequest } from "../../../../utility/Api";
-import { ToggleBankAccount } from "../wallet";
+import { ToggleBankAccount } from "../context";
 const WithdrawRequest = () => {
   const { bankAccounts } = useContext(ToggleBankAccount); // Access bank accounts from context
 

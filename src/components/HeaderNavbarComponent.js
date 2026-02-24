@@ -1,21 +1,19 @@
 import React from "react";
 import { useLocation } from "react-router-dom";
-import Navbar from "./Headers/Header"; // Adjust the import path as necessary
-import Banner from "./Navbar"; // Adjust the import path as necessary
+import Navbar from "./Headers/Header";
+import Banner from "./Navbar";
 import Footer from "./Footers/Footer";
 
 const HeaderNavbarCom = ({ title, subtitle, children }) => {
-  const location = useLocation(); // Hook to get the current route
+  const location = useLocation();
+  const isLoginRoute = location.pathname === "/";
 
   return (
-    <div>
+    <div className="admin-theme min-h-screen flex flex-col">
       <Navbar />
-      {/* Conditionally render Banner if not on the login page */}
-      {location.pathname !== "/" && (
-        <Banner title={title} subtitle={subtitle} />
-      )}
-      <main>{children}</main>
-      {location.pathname !== "/" && <Footer />}
+      {!isLoginRoute ? <Banner title={title} subtitle={subtitle} /> : null}
+      <main className="flex-1">{children}</main>
+      {!isLoginRoute ? <Footer /> : null}
     </div>
   );
 };

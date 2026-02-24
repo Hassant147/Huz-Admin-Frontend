@@ -1,10 +1,7 @@
 import React from "react";
 import DeleteIcon from "../../../../assets/DeleteIcon.svg";
-import Loader from "../../../../components/loader";
 import AccountStatementImage from "../../../../assets/AccountsStatement.svg";
-import Header from "../../../../components/Headers/HeaderForAdminPanel";
-import NavigationBar from "../../../../components/NavigationBarForContent";
-import Footer from "../../../../components/Footers/FooterForLoggedIn";
+import AdminPanelLayout from "../../../../components/layout/AdminPanelLayout";
 import { useLocation } from "react-router-dom";
 
 const AccountStatementHistory = () => {
@@ -25,10 +22,12 @@ const AccountStatementHistory = () => {
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header />
-      <NavigationBar />
-      <div className="text-[#4b465c] my-4 w-[90%] mx-auto flex-grow">
+    <AdminPanelLayout
+      title="Account Statement History"
+      subtitle="Review complete transaction history for your wallet account."
+      mainClassName="py-5"
+    >
+      <div className="text-[#4b465c] my-1 flex-grow">
         <p className="font-bold py-3">Account Statement History</p>
         <div className="flex justify-center items-center min-h-[400px] relative sm:rounded-sm bg-gray-50">
           {transactions.length > 0 ? (
@@ -108,8 +107,7 @@ const AccountStatementHistory = () => {
           )}
         </div>
       </div>
-      <Footer />
-    </div>
+    </AdminPanelLayout>
   );
 };
 

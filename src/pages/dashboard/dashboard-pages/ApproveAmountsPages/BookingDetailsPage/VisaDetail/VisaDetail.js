@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useMemo } from "react";
 import { FaFilePdf, FaFileWord, FaFileImage } from "react-icons/fa";
-import toast from "react-hot-toast";
+import { AppButton, AppCard, AppEmptyState, AppSectionHeader } from "../../../../../../components/ui";
+import errorIcon from "../../../../../../assets/error.svg";
+import { withFallback } from "../bookingDetailsUtils";
 
 const getFileIcon = (filename) => {
-  const extension = filename.split(".").pop().toLowerCase();
+  const extension = `${filename || ""}`.split(".").pop().toLowerCase();
   switch (extension) {
     case "pdf":
       return <FaFilePdf className="text-red-500" />;
@@ -20,59 +21,66 @@ const getFileIcon = (filename) => {
   }
 };
 
-const VisaDetails = ({ booking, onDelete }) => {
-  const [documents, setDocuments] = useState([]);
+const VisaDetails = ({ booking }) => {
   const { REACT_APP_API_BASE_URL } = process.env;
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (booking.booking_documents_status[0].is_visa_completed) {
-      const visaDocuments = booking.booking_documents.filter(
-        (doc) => doc.document_for === "eVisa"
-      );
-      setDocuments(visaDocuments);
+  const documents = useMemo(() => {
+    const visaCompleted = booking?.booking_documents_status?.[0]?.is_visa_completed;
+    if (!visaCompleted) {
+      return [];
     }
+
+    return (booking?.booking_documents || []).filter(
+      (doc) => `${doc.document_for || ""}`.toLowerCase() === "evisa"
+    );
   }, [booking]);
 
-  const openDocument = (documentLink) => {
-    window.open(`${REACT_APP_API_BASE_URL}${documentLink}`, "_blank");
-  };
   return (
-    <div className="space-y-2 py-2">
-      <div className="flex justify-between items-center">
-        <h2 className="text-base font-medium text-gray-500">
-          Shared Visa detail
-        </h2>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-2 bg-gray-50 rounded">
-        {documents.length > 0 ? (
-          documents.map((doc) => (
-            <div
-              key={doc.document_id}
-              className="flex justify-between items-center p-3 bg-white border border-gray-200 rounded shadow-sm"
-            >
-              <div className="flex items-center space-x-2">
-                {getFileIcon(doc.document_link)}
-                <p
-                  className="text-sm text-gray-700 cursor-pointer"
-                  onClick={() => openDocument(doc.document_link)}
+    <AppCard className="border-slate-200">
+      <div className="app-content-stack">
+        <AppSectionHeader
+          title="Visa Details"
+          subtitle="Uploaded eVisa files for this booking"
+        />
+
+        {documents.length ? (
+          <div className="grid gap-3 md:grid-cols-2">
+            {documents.map((doc) => {
+              const fileName = `${doc.document_link || ""}`.split("/").pop();
+              const documentUrl = `${REACT_APP_API_BASE_URL}${doc.document_link}`;
+
+              return (
+                <article
+                  key={doc.document_id || doc.document_link}
+                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-3"
                 >
-                  {doc.document_link.split("/").pop()}
-                </p>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className=" rounded-lg w-full max-w-md items-center justify-center">
-            <div className="flex flex-col items-center justify-center">
-              <p className="mt-2 text-sm text-center text-[#121212] font-poppins">
-                No Documents uploaded yet
-              </p>
-            </div>
+                  <div className="flex items-center gap-2 text-sm text-ink-700">
+                    {getFileIcon(doc.document_link)}
+                    <span className="max-w-[180px] truncate">{withFallback(fileName)}</span>
+                  </div>
+                  <AppButton
+                    as="a"
+                    href={documentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    size="sm"
+                    variant="outline"
+                  >
+                    Open
+                  </AppButton>
+                </article>
+              );
+            })}
           </div>
+        ) : (
+          <AppEmptyState
+            icon={<img src={errorIcon} alt="" className="h-6 w-6" />}
+            title="No visa files uploaded"
+            message="Visa documents will appear here after they are shared."
+          />
         )}
       </div>
-    </div>
+    </AppCard>
   );
 };
 

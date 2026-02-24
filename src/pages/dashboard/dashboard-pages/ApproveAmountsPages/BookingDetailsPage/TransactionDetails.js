@@ -1,46 +1,91 @@
 import React from "react";
+import { AppButton, AppCard, AppEmptyState, AppSectionHeader } from "../../../../../components/ui";
+import errorIcon from "../../../../../assets/error.svg";
+import { formatDateTime, withFallback } from "./bookingDetailsUtils";
 
 const TransactionDetails = ({ booking }) => {
-    const { payment_detail } = booking;
-    const { REACT_APP_API_BASE_URL } = process.env;
+  const paymentDetails = booking?.payment_detail || [];
+  const { REACT_APP_API_BASE_URL } = process.env;
 
-    if (!payment_detail || payment_detail.length === 0) {
-        return <div>No transaction details available.</div>;
-    }
+  return (
+    <AppCard className="border-slate-200">
+      <div className="app-content-stack">
+        <AppSectionHeader
+          title="Transaction Details"
+          subtitle="Proofs and references submitted for this booking"
+        />
 
-    return (
-        <div className="bg-white p-6 rounded-lg shadow-md w-full">
-            <h2 className="text-xl font-semibold mb-4 text-gray-600">Transaction Details</h2>
-            <div className="space-y-4">
-                {payment_detail.map((payment, index) => (
-                    <div key={index} className="border-b pb-4">
-                        <p className="text-sm text-gray-500 mb-2">
-                            <strong>Transaction Time:</strong>{" "}
-                            {new Date(payment.transaction_time).toLocaleString()}
-                        </p>
-                        <p className="text-sm text-gray-500 mb-2">
-                            <strong>Transaction Amount:</strong> PKR {payment.transaction_amount}
-                        </p>
-                        {payment.transaction_number && (
-                            <p className="text-sm text-gray-500 mb-2">
-                                <strong>Transaction Number:</strong> {payment.transaction_number}
-                            </p>
-                        )}
-                        {payment.transaction_photo && (
-                            <div className="mt-4">
-                                <strong className="text-gray-600">Transaction Photo:</strong>
-                                <img
-                                    src={`${REACT_APP_API_BASE_URL}${payment.transaction_photo}`}
-                                    alt="Transaction"
-                                    className="mt-2 max-w-xs rounded-md shadow-md"
-                                />
-                            </div>
-                        )}
+        {paymentDetails.length ? (
+          <div className="space-y-3">
+            {paymentDetails.map((payment, index) => {
+              const photoUrl = payment.transaction_photo
+                ? `${REACT_APP_API_BASE_URL}${payment.transaction_photo}`
+                : "";
+
+              return (
+                <article
+                  key={`${payment.transaction_number || "transaction"}-${index}`}
+                  className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4"
+                >
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <InfoTile
+                      label="Transaction Time"
+                      value={formatDateTime(payment.transaction_time)}
+                    />
+                    <InfoTile
+                      label="Transaction Amount"
+                      value={`PKR ${Number(payment.transaction_amount || 0).toLocaleString()}`}
+                    />
+                    <InfoTile
+                      label="Transaction Number"
+                      value={withFallback(payment.transaction_number)}
+                    />
+                  </div>
+
+                  {photoUrl ? (
+                    <div className="mt-3">
+                      <img
+                        src={photoUrl}
+                        alt="Transaction proof"
+                        className="max-h-48 rounded-lg border border-slate-200 object-cover"
+                      />
+                      <div className="mt-2">
+                        <AppButton
+                          as="a"
+                          href={photoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          size="sm"
+                          variant="outline"
+                        >
+                          Open Photo
+                        </AppButton>
+                      </div>
                     </div>
-                ))}
-            </div>
-        </div>
-    );
+                  ) : null}
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <AppEmptyState
+            icon={<img src={errorIcon} alt="" className="h-6 w-6" />}
+            title="No transaction records"
+            message="No payment proofs were provided for this booking."
+          />
+        )}
+      </div>
+    </AppCard>
+  );
+};
+
+const InfoTile = ({ label, value }) => {
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wide text-ink-300">{label}</p>
+      <p className="mt-1 text-sm text-ink-700">{value}</p>
+    </div>
+  );
 };
 
 export default TransactionDetails;

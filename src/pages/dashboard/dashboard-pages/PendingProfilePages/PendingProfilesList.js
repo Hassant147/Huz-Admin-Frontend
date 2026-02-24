@@ -1,192 +1,197 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import NoContent from "../../../../components/NoContent";
 import { fetchPendingCompanies } from "../../../../utility/Super-Admin-Api";
-import BackButton from "../../../../components/BackButton";
+import { AppButton, AppCard, AppEmptyState, AppSectionHeader } from "../../../../components/ui";
+import errorIcon from "../../../../assets/error.svg";
+import SuperAdminModuleShell from "../../components/SuperAdminModuleShell";
+import SuperAdminPagination from "../../components/SuperAdminPagination";
+import SuperAdminMetricCard from "../../components/SuperAdminMetricCard";
+import SuperAdminInfoTile from "../../components/SuperAdminInfoTile";
+import usePaginatedRecords from "../../components/usePaginatedRecords";
+import Loader from "../../../../components/loader";
+import {
+  formatDateTime,
+  getInitial,
+  withFallback,
+} from "../../components/superAdminFormatters";
+
+const ITEMS_PER_PAGE = 6;
 
 const PendingProfilePage = () => {
-  const [companies, setCompanies] = useState([]); // State to store the fetched companies
-  const [loading, setLoading] = useState(true); // State for loading status
-  const [error, setError] = useState(null); // State for error handling
-  const [currentPage, setCurrentPage] = useState(1); // State for current page
-  const itemsPerPage = 5; // Number of items per page
-  const navigate = useNavigate(); // Hook for navigation
+  const [companies, setCompanies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const { status, data, error } = await fetchPendingCompanies();
+  const { currentPage, totalPages, currentItems, onPageChange } = usePaginatedRecords(
+    companies,
+    ITEMS_PER_PAGE
+  );
 
-      if (status === 200 && data.length > 0) {
-        // Filter out companies with null partner_type_and_detail
-        const validCompanies = data.filter(
-          (company) => company.partner_type_and_detail !== null
-        );
-        setCompanies(validCompanies);
-      } else if (status === 404) {
-        setCompanies([]); // No content found
-      } else {
-        setError(error || "An error occurred while fetching data.");
-      }
-      setLoading(false);
-    };
+  const loadPendingProfiles = useCallback(async () => {
+    setLoading(true);
+    setError("");
 
-    fetchData();
+    const { status, data, error: requestError } = await fetchPendingCompanies();
+
+    if (status === 200 && Array.isArray(data)) {
+      const validCompanies = data.filter((company) => company.partner_type_and_detail);
+      setCompanies(validCompanies);
+    } else if (status === 404) {
+      setCompanies([]);
+    } else {
+      setCompanies([]);
+      setError(requestError || "An error occurred while fetching data.");
+    }
+
+    setLoading(false);
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-[80vh]">
-        <div className="loader"></div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    loadPendingProfiles();
+  }, [loadPendingProfiles]);
 
-  if (error) {
-    return <div className="text-center text-red-500">Error: {error}</div>;
-  }
+  const uniqueCitiesCount = useMemo(() => {
+    const citySet = new Set();
+    companies.forEach((company) => {
+      if (company?.mailing_detail?.city) {
+        citySet.add(company.mailing_detail.city);
+      }
+    });
+    return citySet.size;
+  }, [companies]);
 
-  // Calculate the index range for the current page
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = companies.slice(indexOfFirstItem, indexOfLastItem);
-
-  // Function to handle page changes
-  const handlePageChange = (pageNumber) => {
-    setCurrentPage(pageNumber);
-  };
-
-  // Function to handle clicking on "View" button
-  const handleViewClick = (company) => {
-    navigate("/profile-approval", { state: { company } });
-  };
-
-  // Calculate total pages
-  const totalPages = Math.ceil(companies.length / itemsPerPage);
+  const recentSubmissions = useMemo(() => {
+    const now = Date.now();
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+    return companies.filter((company) => {
+      const createdTime = new Date(company.created_time).getTime();
+      return !Number.isNaN(createdTime) && now - createdTime <= ONE_DAY_MS;
+    }).length;
+  }, [companies]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="w-[90%] mx-auto">
-        <BackButton />
-        {companies.length > 0 ? (
-          <>
-            <h1 className="text-2xl text-gray-700 mb-6">
-              Approve Partner Profiles
-            </h1>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-6 w-full">
-              {currentItems.map((company, index) => (
-                <div
-                  key={index}
-                  className="flex flex-col lg:flex-row items-center lg:items-start p-4 bg-white rounded-lg shadow-sm border border-gray-200 w-full"
-                >
-                  {/* Company details */}
-                  <div className="flex w-full lg:w-[24%]  ">
-                    <div className="w-full items-center mb-4 lg:mb-0">
-                      <h2 className="text-sm text-gray-700">
-                        {company.partner_type_and_detail.company_name ||
-                          "Company name not provided"}
-                      </h2>
-                      <p className="text-xs text-gray-500">
-                        {company.address || "City not provided"}
-                      </p>
-                    </div>
-                    <div className="lg:hidden block">
-                      {" "}
-                      <span
-                        className={`inline-block px-3 py-1 rounded-sm text-sm font-semibold 
-                                            ${
-                                              company.account_status ===
-                                              "Pending"
-                                                ? "bg-orange-100 text-[#FF9F43]"
-                                                : "bg-green-100 text-green-700"
-                                            }`}
-                      >
-                        {company.account_status}
-                      </span>
-                    </div>
-                  </div>
-                  {/* Other details */}
-                  <div className="w-full lg:w-[24%] mb-4 lg:mb-0">
-                    <div className="flex items-center">
-                      <div className="flex-shrink-0">
-                        <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-[#7367F0] font-semibold text-xl">
-                          {company.name ? company.name[0].toUpperCase() : "N/A"}
-                        </div>
+    <SuperAdminModuleShell
+      title="Pending Profiles"
+      subtitle="Review company profiles and route them to approval detail."
+      showBackButton={false}
+    >
+      {loading ? (
+        <AppCard className="min-h-[320px] flex items-center justify-center">
+          <Loader />
+        </AppCard>
+      ) : error ? (
+        <AppCard>
+          <AppEmptyState
+            icon={<img src={errorIcon} alt="" className="h-6 w-6" />}
+            title="Unable to load pending profiles"
+            message={error}
+            action={
+              <AppButton size="sm" onClick={loadPendingProfiles}>
+                Retry
+              </AppButton>
+            }
+          />
+        </AppCard>
+      ) : companies.length > 0 ? (
+        <>
+          <div className="app-grid-3">
+            <SuperAdminMetricCard
+              title="Pending Profiles"
+              value={companies.length.toLocaleString()}
+              hint="Companies waiting for review"
+            />
+            <SuperAdminMetricCard
+              title="Recent (24h)"
+              value={recentSubmissions.toLocaleString()}
+              hint="New submissions in the last day"
+            />
+            <SuperAdminMetricCard
+              title="Coverage"
+              value={`${uniqueCitiesCount.toLocaleString()} cities`}
+              hint={`${currentItems.length} records on current page`}
+            />
+          </div>
+
+          <AppCard className="border-slate-200">
+            <AppSectionHeader
+              title="Approve Partner Profiles"
+              subtitle={`Showing ${currentItems.length} of ${companies.length} pending records`}
+            />
+          </AppCard>
+
+          <div className="app-content-stack">
+            {currentItems.map((company) => (
+              <AppCard key={company.partner_session_token} className="border-slate-200">
+                <article className="app-content-stack">
+                  <header className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 font-semibold text-brand-700">
+                        {getInitial(company.name)}
                       </div>
-                      <div className="ml-4 items-center">
-                        <p className="text-sm text-gray-700">
-                          {company.name || "Full name not provided"}
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-ink-300">
+                          Company
                         </p>
-                        <p className="text-xs text-gray-500">{company.email}</p>
+                        <h3 className="text-base font-semibold text-ink-900">
+                          {withFallback(company.partner_type_and_detail?.company_name, "Company")}
+                        </h3>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Date */}
-                  <div className="w-full lg:w-[13%] mb-4 lg:mb-0 lg:text-center items-center lg:border-l lg:border-r text-start">
-                    <p className="text-sm text-gray-700">
-                      {new Date(company.created_time).toLocaleDateString()}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(company.created_time).toLocaleTimeString()}
-                    </p>
-                  </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="app-status-pill">{company.account_status || "Pending"}</span>
+                      <AppButton
+                        size="sm"
+                        onClick={() => navigate("/profile-approval", { state: { company } })}
+                      >
+                        Review
+                      </AppButton>
+                    </div>
+                  </header>
 
-                  {/* License */}
-                  <div className="w-full lg:w-[15%] items-center mb-4 lg:mb-0 text-left lg:text-right">
-                    <p className="text-xs text-gray-500">License #</p>
-                    <p className="text-sm text-gray-700">
-                      {company.partner_type_and_detail.license_number || "N/A"}
-                    </p>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <SuperAdminInfoTile
+                      label="Contact"
+                      value={withFallback(company.name, "Name not provided")}
+                    />
+                    <SuperAdminInfoTile
+                      label="Location"
+                      value={withFallback(
+                        company.mailing_detail?.city || company.mailing_detail?.country,
+                        "Location not provided"
+                      )}
+                    />
+                    <SuperAdminInfoTile
+                      label="Created"
+                      value={formatDateTime(company.created_time)}
+                    />
+                    <SuperAdminInfoTile
+                      label="License Number"
+                      value={withFallback(company.partner_type_and_detail?.license_number, "N/A")}
+                    />
                   </div>
+                </article>
+              </AppCard>
+            ))}
+          </div>
 
-                  {/* View Button */}
-                  <div className="w-full lg:w-auto text-right lg:flex-1 items-center justify-end space-x-2 lg:space-x-16 lg:flex">
-                    <span
-                      className={`hidden lg:inline-block px-3 py-1 rounded-sm text-sm font-semibold 
-                                            ${
-                                              company.account_status ===
-                                              "Pending"
-                                                ? "bg-orange-100 text-[#FF9F43]"
-                                                : "bg-green-100 text-green-700"
-                                            }`}
-                    >
-                      {company.account_status}
-                    </span>
-                    <button
-                      className="text-[#00936c] font-semibold border border-[#00936C] rounded px-2 lg:px-3 py-1 hover:bg-[#00936C] hover:text-white"
-                      onClick={() => handleViewClick(company)}
-                    >
-                      View
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Pagination */}
-            <div className="flex justify-end mt-8">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (pageNumber) => (
-                  <button
-                    key={pageNumber}
-                    className={`px-3 py-1 mx-1 rounded ${
-                      currentPage === pageNumber
-                        ? "bg-[#00936C] text-white"
-                        : "bg-gray-200 text-gray-700"
-                    }`}
-                    onClick={() => handlePageChange(pageNumber)}
-                  >
-                    {pageNumber}
-                  </button>
-                )
-              )}
-            </div>
-          </>
-        ) : (
-          <NoContent />
-        )}
-      </div>
-    </div>
+          <SuperAdminPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={onPageChange}
+          />
+        </>
+      ) : (
+        <AppCard>
+          <AppEmptyState
+            icon={<img src={errorIcon} alt="" className="h-6 w-6" />}
+            title="No pending profiles"
+            message="New partner profiles will appear here when submitted for review."
+          />
+        </AppCard>
+      )}
+    </SuperAdminModuleShell>
   );
 };
 

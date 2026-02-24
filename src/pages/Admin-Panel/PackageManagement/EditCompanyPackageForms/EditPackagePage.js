@@ -2,9 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import Loader from "../../../../components/loader";
 
-import Footer from "../../../../components/Footers/FooterForLoggedIn";
-import Header from "../../../../components/Headers/HeaderForAdminPanel";
-import NavigationBar from "../../../../components/NavigationBarForContent";
+import AdminPanelLayout from "../../../../components/layout/AdminPanelLayout";
 
 import BasicInfoForm from "./BasicInformationForm";
 import AirlineForm from "./AirlineForm";
@@ -124,10 +122,12 @@ const EditPackagePage = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#f6f6f6] font-sans">
-      <Header />
-      <NavigationBar />
-      <div className="w-[85%] mx-auto mt-7 mb-10 flex-grow">
+    <AdminPanelLayout
+      title={isEditing ? "Edit Package" : "Package Enrollment"}
+      subtitle="Update package sections and continue to the next step."
+      mainClassName="py-5 bg-[#f6f6f6]"
+    >
+      <div className="mt-2 mb-10 flex-grow">
         <h3 className="text-lg font-medium mb-2 text-gray-600">
           {isEditing ? "Edit Package" : "Package Enrollment"}
         </h3>
@@ -199,8 +199,7 @@ const EditPackagePage = () => {
           <div className="w-full mx-auto">{renderTabContent()}</div>
         )}
       </div>
-      <Footer />
-    </div>
+    </AdminPanelLayout>
   );
 };
 

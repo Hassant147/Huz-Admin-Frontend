@@ -1,91 +1,107 @@
 import React, { useState } from "react";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
-import { updatePartnerPaymentStatus } from "../../../../../utility/Super-Admin-Api"; // Import the new API function
-import Loader from "../../../../../components/loader"; // Import your Loader component
+import { updatePartnerPaymentStatus } from "../../../../../utility/Super-Admin-Api";
+import { AppButton, AppCard, AppSectionHeader } from "../../../../../components/ui";
+
+const RESPONSE_MESSAGE_MAP = {
+  400: "Bad request: missing or invalid input data.",
+  401: "Unauthorized: admin permissions required.",
+  404: "Booking or user details were not found.",
+  409: "The current account status does not allow this action.",
+};
 
 const Action = ({ booking }) => {
-  const [isSelect, setIsSelect] = useState("Accept");
-  const [isLoading, setIsLoading] = useState(false); // State to track API call status
-  const navigate = useNavigate(); // Hook to navigate programmatically
+  const [decision, setDecision] = useState("accept");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setIsSelect(e.target.value);
-  };
-
-  const handleSubmit = async () => {
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!booking) {
+      toast.error("Booking data is not available.");
+      return;
+    }
     const { partner_session_token, booking_number } = booking;
-
-    setIsLoading(true); // Set loading state to true
-
-    if (isSelect === "Accept") {
+    setIsSubmitting(true);
+    if (decision === "accept") {
       const response = await updatePartnerPaymentStatus(
         partner_session_token,
         booking_number
       );
 
-      // Handle different response statuses
       if (response.status === 200) {
-        toast.success("Booking status updated successfully!");
-        navigate(-1); // Navigate back to the previous page
-      } else if (response.status === 400) {
-        toast.error("Bad Request: Missing or invalid input data.");
-      } else if (response.status === 401) {
-        toast.error("Unauthorized: Admin permissions required.");
-      } else if (response.status === 404) {
-        toast.error("Not Found: Booking or user detail not found.");
-      } else if (response.status === 409) {
-        toast.warning(
-          "Conflict: The current account status does not allow this action."
-        );
+        toast.success("Partner payment status updated successfully.");
+        setTimeout(() => navigate(-1), 900);
       } else {
-        toast.error("Internal Server Error: Something went wrong.");
+        toast.error(RESPONSE_MESSAGE_MAP[response.status] || "Failed to update payment status.");
       }
     } else {
-      toast.warning("Booking rejected. No changes made.");
-      navigate(-1)
+      toast.info("Request marked as rejected. No transfer call was sent.");
+      setTimeout(() => navigate(-1), 700);
     }
 
-    setIsLoading(false); // Set loading state to false after API call
+    setIsSubmitting(false);
   };
 
   return (
-    <div className="space-y-4">
-      <ToastContainer position="top-right" autoClose={5000} hideProgressBar />
-      <div className="bg-white p-6 rounded-md text-[20px] text-gray-500 font-semibold space-y-4">
-        <p>Your Action</p>
-        <p className="text-[16px]">Which kind of option you want to choose?</p>
-        <div className="flex items-center gap-20">
-          <div className="flex items-center gap-2" onChange={handleChange}>
-            <input
-              type="radio"
-              value="Accept"
-              checked={isSelect === "Accept"}
-              onChange={handleChange}
-            />
-            <label className="text-[13px]">Accept</label>
-          </div>
-          <div className="flex items-center gap-2" onChange={handleChange}>
-            <input
-              type="radio"
-              value="Reject"
-              checked={isSelect === "Reject"}
-              onChange={handleChange}
-            />
-            <label className="text-[13px]">Reject</label>
-          </div>
+    <AppCard className="border-slate-200">
+      <form onSubmit={handleSubmit} className="app-content-stack">
+        <AppSectionHeader
+          title="Review Decision"
+          subtitle="Approve partner transfer settlement or reject this request."
+        />
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          <DecisionTile
+            label="Approve partner payment"
+            checked={decision === "accept"}
+            onSelect={() => setDecision("accept")}
+          />
+          <DecisionTile
+            label="Reject this request"
+            checked={decision === "reject"}
+            onSelect={() => setDecision("reject")}
+          />
         </div>
-      </div>
-      <button
-        className="w-full bg-[#00936c] text-white text-center p-3 rounded-md flex items-center justify-center"
-        onClick={handleSubmit}
-        disabled={isLoading} // Disable the button when loading
-      >
-        {isLoading ? <Loader /> : "Submit Your Decision"}{" "}
-        {/* Show loader or button text */}
-      </button>
-    </div>
+
+        <div className="flex justify-end">
+          <AppButton
+            type="submit"
+            className="min-w-[190px]"
+            loading={isSubmitting}
+            loadingLabel="Applying..."
+          >
+            Submit Decision
+          </AppButton>
+        </div>
+      </form>
+    </AppCard>
+  );
+};
+
+const DecisionTile = ({ label, checked, onSelect }) => {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`rounded-xl border px-3 py-3 text-left text-sm font-semibold transition ${
+        checked
+          ? "border-brand-500 bg-brand-50 text-brand-700"
+          : "border-slate-200 bg-white text-ink-700 hover:border-brand-200 hover:bg-slate-50"
+      }`}
+    >
+      <span className="flex items-center gap-2">
+        <span
+          className={`h-4 w-4 rounded-full border ${
+            checked ? "border-brand-600 bg-brand-500" : "border-slate-400"
+          }`}
+          aria-hidden="true"
+        />
+        {label}
+      </span>
+    </button>
   );
 };
 

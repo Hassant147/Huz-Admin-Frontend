@@ -2,9 +2,7 @@ import React, { useState } from "react";
 import { Transition } from "@headlessui/react";
 import { IoIosArrowDown } from "react-icons/io";
 import { AiOutlineSearch } from "react-icons/ai"; // Importing search icon from React Icons
-import Header from "../../../../components/Headers/HeaderForLoggedIn";
-// import NavigationBar from "../../../../components/NavigationBarForContent";
-import Footer from "../../../../components/Footers/FooterForLoggedIn";
+import AdminPanelLayout from "../../../../components/layout/AdminPanelLayout";
 
 const faqs = [
   {
@@ -78,10 +76,12 @@ const FQA = () => {
   // const textRevealAnimation = (text) => <></>;
 
   return (
-    <div>
-      <Header />
-      {/* <NavigationBar /> */}
-      <div className=" bg-gray-100">
+    <AdminPanelLayout
+      title="Frequently Asked Questions"
+      subtitle="Quick answers for common partner panel queries."
+      mainClassName="py-5 bg-gray-100"
+    >
+      <div className="bg-gray-100">
         <div className="p-5 pb-11 w-[90%] mx-auto ">
           <div className="mt-11">
             <div className="flex flex-col lg:flex-row">
@@ -162,8 +162,7 @@ const FQA = () => {
           </div>
         </div>
       </div>
-      <Footer />
-    </div>
+    </AdminPanelLayout>
   );
 };
 

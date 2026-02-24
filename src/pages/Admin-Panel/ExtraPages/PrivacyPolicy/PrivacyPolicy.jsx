@@ -1,13 +1,13 @@
 import React from "react";
-import Header from "../../../../components/Headers/HeaderForLoggedIn";
-// import NavigationBar from "../../../components/NavigationBarForContent";
-import Footer from "../../../../components/Footers/FooterForLoggedIn";
+import AdminPanelLayout from "../../../../components/layout/AdminPanelLayout";
 
 const PrivacyPolicy = () => {
   return (
-    <div>
-      <Header />
-      {/* <NavigationBar /> */}
+    <AdminPanelLayout
+      title="Privacy Policy"
+      subtitle="Read how user and business data is collected, used, and protected."
+      mainClassName="py-5 bg-gray-50"
+    >
       <div className="">
         <main>
           <div className="min-h-screen bg-gray-50 flex flex-col justify-start ">
@@ -684,9 +684,8 @@ const PrivacyPolicy = () => {
             </div>
           </div>
         </main>
-        <Footer />
       </div>
-    </div>
+    </AdminPanelLayout>
   );
 };
 

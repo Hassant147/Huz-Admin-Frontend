@@ -1,4 +1,5 @@
 import React from "react";
+import { AppButton } from "../../../../components/ui";
 
 const Pagination = ({
   totalItems,
@@ -12,25 +13,29 @@ const Pagination = ({
     onPageChange(page);
   };
 
+  if (totalPages <= 1) {
+    return null;
+  }
+
   return (
-    <div className="flex justify-center mt-4">
-      <nav>
-        <ul className="flex list-none">
-          {Array.from({ length: totalPages }, (_, index) => (
-            <li
-              key={index}
-              className={`px-3 py-1 mx-1 border rounded-full ${
-                currentPage === index + 1
-                  ? "bg-[#00936C] text-white"
-                  : "bg-white text-gray-700"
-              }`}
+    <div className="flex justify-center">
+      <nav className="flex flex-wrap justify-center gap-2">
+        {Array.from({ length: totalPages }, (_, index) => {
+          const pageNumber = index + 1;
+          const isCurrent = currentPage === pageNumber;
+
+          return (
+            <AppButton
+              key={pageNumber}
+              variant={isCurrent ? "primary" : "outline"}
+              size="sm"
+              className="min-w-[40px] rounded-full px-3"
+              onClick={() => handleClick(pageNumber)}
             >
-              <button onClick={() => handleClick(index + 1)}>
-                {index + 1}
-              </button>
-            </li>
-          ))}
-        </ul>
+              {pageNumber}
+            </AppButton>
+          );
+        })}
       </nav>
     </div>
   );

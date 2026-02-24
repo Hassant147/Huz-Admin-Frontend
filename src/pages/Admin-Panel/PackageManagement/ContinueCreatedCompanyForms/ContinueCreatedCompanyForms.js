@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-import Footer from "../../../../components/Footers/FooterForLoggedIn";
-import Header from "../../../../components/Headers/HeaderForAdminPanel";
-import NavigationBar from "../../../../components/NavigationBarForContent";
+import AdminPanelLayout from "../../../../components/layout/AdminPanelLayout";
 
 import BasicInfoForm from "./BasicInformationForm";
 import AirlineForm from "./AirlineForm";
@@ -142,10 +140,12 @@ const ContinueCreatedCompanyForms = () => {
   };
 
   return (
-    <div className="flex flex-col bg-[#f6f6f6] font-sans min-h-screen ">
-      <Header />
-      <NavigationBar />
-      <div className="w-[85%] mx-auto lg:mt-14 mt-7 mb-10 flex-grow">
+    <AdminPanelLayout
+      title="Continue Package Enrollment"
+      subtitle="Resume and complete the remaining package sections."
+      mainClassName="py-5 bg-[#f6f6f6]"
+    >
+      <div className="lg:mt-4 mt-2 mb-10 flex-grow">
         <h3 className="text-lg font-medium mb-2 text-gray-600">
           Package Enrollment
         </h3>
@@ -199,8 +199,7 @@ const ContinueCreatedCompanyForms = () => {
         <div className="w-[85%] lg:w-full mx-auto font-sans mt-10"></div>
         <div className="w-full mx-auto">{renderTabContent()}</div>
       </div>
-      <Footer />
-    </div>
+    </AdminPanelLayout>
   );
 };
 

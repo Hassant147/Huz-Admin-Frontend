@@ -1,74 +1,88 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom"; // To get state passed from the previous component
-import { fetchBookingDetails } from "../../../../../utility/Super-Admin-Api"; // Import your API function
-import Loader from "../../../../../components/loader"; // Import the Loader component
-import NoContent from "../../../../../components/NoContent"; // Import NoContent component
+import { fetchBookingDetails } from "../../../../../utility/Super-Admin-Api";
+import Loader from "../../../../../components/loader";
 import PackageDetails from "../../ApproveAmountsPages/BookingDetailsPage/PackageDetails";
 import BookingInfo from "../../ApproveAmountsPages/BookingDetailsPage/BookingInfo";
 import VisaDetails from "../../ApproveAmountsPages/BookingDetailsPage/VisaDetail/VisaDetail";
 import AirlineDetails from "../../ApproveAmountsPages/BookingDetailsPage/AirlineDetail/AirlineDetail";
 import TransportDetails from "../../ApproveAmountsPages/BookingDetailsPage/TransportDetail/TransportDetail";
 import HotelDetails from "../../ApproveAmountsPages/BookingDetailsPage/HotelDetail/HotelDetail";
+import TransactionDetails from "../../ApproveAmountsPages/BookingDetailsPage/TransactionDetails";
+import { AppCard, AppEmptyState } from "../../../../../components/ui";
+import errorIcon from "../../../../../assets/error.svg";
 
-const BookingDetailsComponent = () => {
-  const location = useLocation();
-  const booking = location.state?.booking; // Retrieve the booking object passed from the previous page
-  const [bookingDetails, setBookingDetails] = useState(null); // State to store booking details
-  const [loading, setLoading] = useState(true); // State for loading status
-  const [error, setError] = useState(null); // State for error handling
+const BookingDetailsComponent = ({ booking }) => {
+  const [bookingDetails, setBookingDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    if (booking) {
-      const fetchDetails = async () => {
-        const { partner_session_token, booking_number } = booking;
-        const { status, data, error } = await fetchBookingDetails(
-          partner_session_token,
-          booking_number
-        );
-
-        if (status === 200) {
-          setBookingDetails(data);
-        } else {
-          setError(
-            error || "An error occurred while fetching booking details."
-          );
-        }
+    const loadBookingDetails = async () => {
+      if (!booking) {
+        setError("No booking record was provided.");
         setLoading(false);
-      };
+        return;
+      }
 
-      fetchDetails();
-    } else {
+      const { partner_session_token, booking_number } = booking;
+      const { status, data, error: requestError } = await fetchBookingDetails(
+        partner_session_token,
+        booking_number
+      );
+
+      if (status === 200 && data) {
+        setBookingDetails(data);
+      } else {
+        setError(requestError || "Unable to fetch booking details.");
+      }
+
       setLoading(false);
-      setError("No booking data available.");
-    }
+    };
+
+    loadBookingDetails();
   }, [booking]);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-[80vh]">
+      <AppCard className="min-h-[240px] flex items-center justify-center">
         <Loader />
-      </div>
+      </AppCard>
     );
   }
 
   if (error) {
-    return <div className="text-center text-red-500">Error: {error}</div>;
+    return (
+      <AppCard>
+        <AppEmptyState
+          icon={<img src={errorIcon} alt="" className="h-6 w-6" />}
+          title="Unable to load booking details"
+          message={error}
+        />
+      </AppCard>
+    );
   }
 
   if (!bookingDetails) {
-    return <NoContent />;
+    return (
+      <AppCard>
+        <AppEmptyState
+          icon={<img src={errorIcon} alt="" className="h-6 w-6" />}
+          title="No booking details found"
+          message="No details were returned for this booking request."
+        />
+      </AppCard>
+    );
   }
 
   return (
-    <div className="bg-gray-50">
-      <div className="space-y-4">
-        <PackageDetails booking={bookingDetails} />
-        <BookingInfo booking={bookingDetails} />
-        <VisaDetails booking={bookingDetails} />
-        <AirlineDetails booking={bookingDetails} />
-        {/* <TransportDetails booking={bookingDetails} />
-        <HotelDetails booking={bookingDetails} /> */}
-      </div>
+    <div className="app-content-stack">
+      <PackageDetails booking={bookingDetails} />
+      <BookingInfo booking={bookingDetails} />
+      <VisaDetails booking={bookingDetails} />
+      <AirlineDetails booking={bookingDetails} />
+      <TransportDetails booking={bookingDetails} />
+      <HotelDetails booking={bookingDetails} />
+      <TransactionDetails booking={bookingDetails} />
     </div>
   );
 };

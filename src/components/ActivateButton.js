@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { deactivateTransportPackage, deactivatePackage } from "../utility/Api"; // Ensure the correct API import
-import Loader from "react-js-loader";
 import { toast } from "react-hot-toast";
 import active from "../assets/active.svg"; // Replace with appropriate icon
+import { AppButton } from "./ui";
 
 const ActivateButton = ({
   onSuccess,
@@ -46,28 +46,17 @@ const ActivateButton = ({
   };
 
   return (
-    <>
-      <button
-        className="bg-[#57726A] hover:bg-[#4D675F] transition-all duration-150 text-white text-sm py-2 px-4 rounded flex items-center justify-center"
-        onClick={handleActivateClick}
-        disabled={loading}
-        style={{ height: "40px" }}
-      >
-        {loading ? (
-          <Loader
-            type="spinner-cub"
-            bgColor="#ffffff"
-            color="#ffffff"
-            size={20}
-          />
-        ) : (
-          <div className="flex gap-2 items-center">
-            <img src={active} alt="" className="h-3" />
-            Activate
-          </div>
-        )}
-      </button>
-    </>
+    <AppButton
+      variant="secondary"
+      size="sm"
+      className="min-w-[118px]"
+      onClick={handleActivateClick}
+      loading={loading}
+      loadingLabel="Activating..."
+      startIcon={!loading ? <img src={active} alt="" className="h-3" /> : null}
+    >
+      Activate
+    </AppButton>
   );
 };
 

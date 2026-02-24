@@ -2,9 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getPackageDetails } from "../../../../utility/Api"; // Adjust this import as needed
 import Loader from "../../../../components/loader";
-import Header from "../../../../components/Headers/HeaderForAdminPanel";
-import NavigationBar from "../../../../components/NavigationBarForContent";
-import Footer from "../../../../components/Footers/FooterForLoggedIn";
+import AdminPanelLayout from "../../../../components/layout/AdminPanelLayout";
 import HeaderSection from "./HeaderSection";
 import IncludedExcludedSection from "./IncludedExcludedSection";
 import HotelDetailsSection from "./HotelDetailsSection";
@@ -152,10 +150,12 @@ const DetailPage = () => {
   };
 
   return (
-    <div className="bg-[#f6f6f6] font-sans">
-      <Header />
-      <NavigationBar />
-      <div className="w-[85%] mx-auto font-sans ">
+    <AdminPanelLayout
+      title="Package Details"
+      subtitle="Review, activate/deactivate, and edit your package."
+      mainClassName="py-5 bg-[#f6f6f6]"
+    >
+      <div className="font-sans">
         <div className=" p-5 rounded-lg text-[#4B465C]">
           {packageDetail ? (
             <div className="space-y-3">
@@ -221,9 +221,8 @@ const DetailPage = () => {
           )}
         </div>
       </div>
-      <Footer />
       <Toaster />
-    </div>
+    </AdminPanelLayout>
   );
 };
 

@@ -4,34 +4,34 @@ import icon1 from '../../../../assets/deactivatedashboardicon.svg';
 import icon2 from '../../../../assets/progressdashboardicon.svg';
 import { fetchPackageStatistics } from '../../../../utility/Api';
 import Loader from '../../../../components/loader'; // Assuming your loader is here
+import { AppCard } from "../../../../components/ui";
+import { getPartnerSessionToken } from "../../../../utility/session";
 
 const DashboardStats = () => {
   const [packagesData, setPackagesData] = useState([]);
   const [loading, setLoading] = useState(true); // State to manage loading
 
   useEffect(() => {
-    const profile = JSON.parse(localStorage.getItem("SignedUp-User-Profile"));
-
     const getPackageStatistics = async () => {
       try {
-        const result = await fetchPackageStatistics(profile.partner_session_token);
+        const result = await fetchPackageStatistics(getPartnerSessionToken());
         setPackagesData([
           {
             id: 1,
             title: 'In progress packages',
-            value: result.Initialize.toString(),
+            value: Number(result.Initialize || 0).toString(),
             icon: icon,
           },
           {
             id: 2,
             title: 'Deactivated packages',
-            value: result.Deactivated.toString(),
+            value: Number(result.Deactivated || 0).toString(),
             icon: icon1,
           },
           {
             id: 3,
             title: 'Active packages',
-            value: result.Active.toString(),
+            value: Number(result.Active || 0).toString(),
             icon: icon2,
           },
         ]);
@@ -86,7 +86,7 @@ const StatCard = ({ icon, title, value }) => {
 
   return (
     <div className="w-full">
-      <div className="bg-white flex items-center px-5 rounded-md shadow-sm w-full lg:h-[104px] h-[80px]">
+      <AppCard className="flex w-full items-center border-slate-200 lg:min-h-[104px] min-h-[80px]">
         <img src={icon} className="w-[54px] h-[54px] text-green-500" alt="icon" />
         <div className="ml-4">
           <h1 className="text-[#4B465C] text-[15px] leading-[22px] font-normal">
@@ -96,7 +96,7 @@ const StatCard = ({ icon, title, value }) => {
             {currentValue.toLocaleString()}
           </p>
         </div>
-      </div>
+      </AppCard>
     </div>
   );
 };
