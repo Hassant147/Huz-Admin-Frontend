@@ -8,11 +8,13 @@ import dashboardIcon from "../assets/dashboardicon.png";
 import complaintsIcon from "../assets/enroll.svg";
 import packageIcon from "../assets/layout-sidebar.svg";
 import starIcon from "../assets/star.svg";
+import mapPinIcon from "../assets/map-pin.svg";
 import { AppContainer } from "./ui";
 
 const NAV_ITEMS = [
   { to: "/partner-dashboard", label: "Dashboard", icon: dashboardIcon },
   { to: "/packages", label: "Package Management", icon: packageIcon },
+  { to: "/hotel-catalog", label: "Hotel Catalog", icon: mapPinIcon, adminOnly: true },
   { to: "/booking", label: "Bookings", icon: booking },
   { to: "/wallet", label: "Wallet", icon: dollarIcon },
   { to: "/complaints", label: "Complaints", icon: complaintsIcon },
@@ -26,11 +28,14 @@ const navLinkClass = ({ isActive }) =>
   ].join(" ");
 
 const NavigationBar = () => {
+  const isSuperAdmin = Boolean(localStorage.getItem("isSuperAdmin"));
+  const visibleItems = NAV_ITEMS.filter((item) => !item.adminOnly || isSuperAdmin);
+
   return (
     <nav className="app-nav-shell">
       <AppContainer>
         <ul className="hidden lg:flex flex-wrap items-center gap-2 py-2">
-          {NAV_ITEMS.map((item) => (
+          {visibleItems.map((item) => (
             <li key={item.to}>
               <NavLink to={item.to} className={navLinkClass}>
                 <img src={item.icon} alt={item.label} className="mr-2 size-[20px] xl:size-[22px]" />
@@ -42,7 +47,7 @@ const NavigationBar = () => {
 
         <div className="lg:hidden text-xs py-2">
           <Swiper spaceBetween={8} slidesPerView={2.05} className="mySwiper">
-            {NAV_ITEMS.map((item) => (
+            {visibleItems.map((item) => (
               <SwiperSlide key={item.to}>
                 <NavLink to={item.to} className={navLinkClass}>
                   <img src={item.icon} alt={item.label} className="mr-2 size-[20px]" />

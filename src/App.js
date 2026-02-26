@@ -49,6 +49,7 @@ const FQA = lazy(() => import("./pages/Admin-Panel/ExtraPages/FrequentlyAskedQue
 const PrivacyPolicy = lazy(() => import("./pages/Admin-Panel/ExtraPages/PrivacyPolicy/PrivacyPolicy"));
 const TermsServices = lazy(() => import("./pages/Admin-Panel/ExtraPages/TermsServices/TermsServices"));
 const Documentation = lazy(() => import("./pages/Admin-Panel/ExtraPages/Documentation-Page/doc"));
+const HotelCatalog = lazy(() => import("./pages/Admin-Panel/HotelCatalog/HotelCatalog"));
 
 const getUserStatus = () => {
   const profile = localStorage.getItem("SignedUp-User-Profile");
@@ -109,48 +110,70 @@ const SUPER_ADMIN_ROUTES = [
     title: "Dashboard",
     subtitle: "Welcome to the dashboard. Manage your content here.",
     Component: SuperAdminDashboard,
+    showPageBanner: true,
   },
   {
     path: "/access-profile",
     title: "Access Profile",
     subtitle: "Manage and access user profiles here.",
     Component: AccessProfilePage,
+    showPageBanner: true,
   },
   {
     path: "/pending-profiles",
     title: "Pending Profiles",
     subtitle: "Review and approve pending profiles.",
     Component: PendingProfilePage,
+    showPageBanner: false,
   },
   {
     path: "/approve-amounts",
     title: "Approve Pending Amounts",
     subtitle: "Approve or reject booking amounts.",
     Component: ApproveAmountsPage,
+    showPageBanner: false,
   },
   {
     path: "/profile-approval",
     title: "Profile Approval",
     subtitle: "Review profile details and decide approval.",
     Component: ProfileApprovalPage,
+    showPageBanner: false,
   },
   {
     path: "/booking-details",
     title: "Booking Details",
     subtitle: "View and manage booking details.",
     Component: BookingDetailsPage,
+    showPageBanner: false,
+  },
+  {
+    path: "/detailpage",
+    title: "Package Details",
+    subtitle: "View detailed package information for the selected booking.",
+    Component: DetailPage,
+    showPageBanner: false,
   },
   {
     path: "/approve-partners-amounts",
     title: "Approve Pending Amounts of Partners",
     subtitle: "Approve or reject partner amounts.",
     Component: ApprovePartnerAmountsPage,
+    showPageBanner: false,
   },
   {
     path: "/booking-details-for-partners",
     title: "Booking Details",
     subtitle: "View and manage partner booking details.",
     Component: PartnerBookingDetailsPage,
+    showPageBanner: false,
+  },
+  {
+    path: "/hotel-catalog",
+    title: "Hotel Catalog",
+    subtitle: "Manage reusable hotel templates used in partner package creation.",
+    Component: HotelCatalog,
+    showPageBanner: false,
   },
 ];
 
@@ -210,14 +233,23 @@ const App = () => {
                       }
                     />
 
-                    {SUPER_ADMIN_ROUTES.map(({ path, title, subtitle, Component }) => (
+                    {SUPER_ADMIN_ROUTES.map(({
+                      path,
+                      title,
+                      subtitle,
+                      Component,
+                      showPageBanner = true,
+                    }) => (
                       <Route
                         key={path}
                         path={path}
                         element={
                           <SuperAdminProtectedRoute
                             element={
-                              <HeaderNavbarCom title={title} subtitle={subtitle}>
+                              <HeaderNavbarCom
+                                title={showPageBanner ? title : ""}
+                                subtitle={showPageBanner ? subtitle : ""}
+                              >
                                 <Component />
                               </HeaderNavbarCom>
                             }
@@ -238,7 +270,6 @@ const App = () => {
                       />
                     ))}
 
-                    <Route path="/detailpage" element={<DetailPage />} />
                   </Routes>
                 </Suspense>
 

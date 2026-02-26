@@ -18,7 +18,6 @@ const SearchBar = ({ selectedDate, onDateChange }) => {
         dateFormat="yyyy-MM-dd"
         placeholderText="Select a date"
         className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm shadow-sm"
-        calendarClassName="custom-calendar"
       />
     </div>
   );

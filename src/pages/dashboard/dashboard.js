@@ -1,6 +1,13 @@
 import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { FiArrowRight, FiBriefcase, FiDollarSign, FiUserCheck, FiUsers } from "react-icons/fi";
+import {
+  FiArrowRight,
+  FiBriefcase,
+  FiDollarSign,
+  FiMapPin,
+  FiUserCheck,
+  FiUsers,
+} from "react-icons/fi";
 import { AppCard, AppContainer } from "../../components/ui";
 
 const DASHBOARD_LINKS = [
@@ -35,6 +42,14 @@ const DASHBOARD_LINKS = [
     priority: "Finance",
     icon: FiBriefcase,
     accentClassName: "bg-violet-50 text-violet-700 border-violet-100",
+  },
+  {
+    to: "/hotel-catalog",
+    title: "Hotel Catalog",
+    description: "Manage master hotel templates for package creation.",
+    priority: "Catalog",
+    icon: FiMapPin,
+    accentClassName: "bg-cyan-50 text-cyan-700 border-cyan-100",
   },
 ];
 
