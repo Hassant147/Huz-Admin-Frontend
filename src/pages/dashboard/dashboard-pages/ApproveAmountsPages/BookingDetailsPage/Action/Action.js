@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
@@ -9,13 +9,53 @@ const RESPONSE_MESSAGE_MAP = {
   400: "Bad request: missing or invalid input data.",
   401: "Unauthorized: admin permissions required.",
   404: "Booking details not found.",
-  409: "Only bookings with paid status can be confirmed.",
+  409: "This payment cannot be reviewed in its current state.",
+};
+
+const normalizePaymentValue = (value = "") => `${value || ""}`.trim().toLowerCase();
+
+const getPaymentTimestamp = (payment = {}) => {
+  const rawValue =
+    payment?.transaction_time ||
+    payment?.updated_at ||
+    payment?.created_at;
+  const timestamp = rawValue ? new Date(rawValue).getTime() : Number.NaN;
+  return Number.isFinite(timestamp) ? timestamp : 0;
+};
+
+const getReviewablePayment = (booking = {}) => {
+  const payments = Array.isArray(booking?.payment_detail) ? booking.payment_detail : [];
+  const sortedPayments = [...payments].sort(
+    (left, right) => getPaymentTimestamp(right) - getPaymentTimestamp(left)
+  );
+
+  return (
+    sortedPayments.find(
+      (payment) => normalizePaymentValue(payment?.payment_status) !== "approved"
+    ) ||
+    sortedPayments[0] ||
+    null
+  );
 };
 
 const Action = ({ booking }) => {
-  const [decision, setDecision] = useState("accept");
+  const [decision, setDecision] = useState("approve");
+  const [reviewMessage, setReviewMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const reviewablePayment = useMemo(() => getReviewablePayment(booking), [booking]);
+  const paymentStageLabel = useMemo(() => {
+    const stage = normalizePaymentValue(
+      reviewablePayment?.full_or_minimum || reviewablePayment?.transaction_type
+    );
+    if (stage === "full") {
+      return "Remaining payment";
+    }
+    if (stage === "minimum") {
+      return "Initial payment";
+    }
+    return "Payment";
+  }, [reviewablePayment]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -23,22 +63,39 @@ const Action = ({ booking }) => {
       toast.error("Booking data is not available.");
       return;
     }
+    if (!reviewablePayment?.payment_id) {
+      toast.error("No reviewable payment submission was found for this booking.");
+      return;
+    }
+    if (decision === "reject" && !reviewMessage.trim()) {
+      toast.error("Enter a rejection reason before submitting.");
+      return;
+    }
+
     const { user_session_token, booking_number } = booking;
     setIsSubmitting(true);
 
-    if (decision === "accept") {
-      const response = await confirmBookingPayment(user_session_token, booking_number);
-      if (response.status === 200) {
-        toast.success("Booking status updated successfully.");
-        setTimeout(() => {
-          navigate(-1);
-        }, 900);
-      } else {
-        toast.error(RESPONSE_MESSAGE_MAP[response.status] || "Failed to update booking status.");
-      }
+    const response = await confirmBookingPayment(user_session_token, booking_number, {
+      decision,
+      paymentId: reviewablePayment.payment_id,
+      reviewMessage: reviewMessage.trim(),
+    });
+
+    if (response.status === 200) {
+      toast.success(
+        decision === "approve"
+          ? `${paymentStageLabel} approved successfully.`
+          : `${paymentStageLabel} rejected and user notified.`
+      );
+      setTimeout(() => {
+        navigate(-1);
+      }, 900);
     } else {
-      toast.info("Booking marked as rejected. No approval call was sent.");
-      setTimeout(() => navigate(-1), 700);
+      toast.error(
+        response.error ||
+          RESPONSE_MESSAGE_MAP[response.status] ||
+          "Failed to update booking status."
+      );
     }
 
     setIsSubmitting(false);
@@ -52,11 +109,21 @@ const Action = ({ booking }) => {
           subtitle="Approve booking payment verification or reject this request."
         />
 
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-ink-700">
+          <p className="font-semibold text-ink-900">{paymentStageLabel}</p>
+          <p className="mt-1">
+            Reviewing reference{" "}
+            <span className="font-semibold">
+              {reviewablePayment?.transaction_number || "Not provided"}
+            </span>
+          </p>
+        </div>
+
         <div className="grid gap-2 sm:grid-cols-2">
           <DecisionTile
             label="Approve booking payment"
-            checked={decision === "accept"}
-            onSelect={() => setDecision("accept")}
+            checked={decision === "approve"}
+            onSelect={() => setDecision("approve")}
           />
           <DecisionTile
             label="Reject this request"
@@ -64,6 +131,25 @@ const Action = ({ booking }) => {
             onSelect={() => setDecision("reject")}
           />
         </div>
+
+        {decision === "reject" ? (
+          <div className="space-y-2">
+            <label
+              htmlFor="payment-review-message"
+              className="text-sm font-semibold text-ink-900"
+            >
+              Rejection reason
+            </label>
+            <textarea
+              id="payment-review-message"
+              value={reviewMessage}
+              onChange={(event) => setReviewMessage(event.target.value)}
+              rows={4}
+              placeholder="Explain why the payment proof was rejected."
+              className="w-full rounded-xl border border-slate-200 px-3 py-3 text-sm text-ink-800 outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+            />
+          </div>
+        ) : null}
 
         <div className="flex justify-end">
           <AppButton

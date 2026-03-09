@@ -245,7 +245,12 @@ export const fetchPaidBookings = async () => {
 // API to confirm payment and update booking status
 export const confirmBookingPayment = async (
   user_session_token,
-  bookingNumber
+  bookingNumber,
+  {
+    decision = "approve",
+    paymentId = "",
+    reviewMessage = "",
+  } = {}
 ) => {
   try {
     const response = await requestWithFallback({
@@ -254,6 +259,9 @@ export const confirmBookingPayment = async (
       data: {
         session_token: user_session_token,
         booking_number: bookingNumber,
+        decision,
+        ...(paymentId ? { payment_id: paymentId } : {}),
+        ...(reviewMessage ? { review_message: reviewMessage } : {}),
       },
     });
 

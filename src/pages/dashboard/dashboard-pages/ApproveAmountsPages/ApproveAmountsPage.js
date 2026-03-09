@@ -90,7 +90,7 @@ const ApproveAmountsPage = () => {
   return (
     <SuperAdminModuleShell
       title="Approve Amounts"
-      subtitle="Review paid booking requests and move them to detailed action."
+      subtitle="Review payment submissions and move them to detailed action."
       showBackButton={false}
       toolbar={
         <div className="flex flex-wrap items-end gap-2 sm:gap-3">
@@ -130,7 +130,7 @@ const ApproveAmountsPage = () => {
             <SuperAdminMetricCard
               title="Total Requests"
               value={bookings.length.toLocaleString()}
-              hint="Paid booking submissions"
+              hint="Payment submissions awaiting review"
             />
             <SuperAdminMetricCard
               title="Matching Results"
@@ -146,7 +146,7 @@ const ApproveAmountsPage = () => {
 
           <AppCard className="border-slate-200">
             <AppSectionHeader
-              title="Paid Booking Requests"
+              title="Payment Review Queue"
               subtitle={`Showing ${currentItems.length} of ${filteredBookings.length} records`}
             />
           </AppCard>
@@ -206,11 +206,13 @@ const ApproveAmountsPage = () => {
         <AppCard>
           <AppEmptyState
             icon={<img src={errorIcon} alt="" className="h-6 w-6" />}
-            title={hasActiveFilter ? "No results for selected date" : "No paid bookings"}
+            title={
+              hasActiveFilter ? "No results for selected date" : "No payment requests"
+            }
             message={
               hasActiveFilter
                 ? "Try another date or clear the filter to view all requests."
-                : "Paid booking requests will appear here."
+                : "Pending payment submissions will appear here."
             }
             action={
               hasActiveFilter ? (
@@ -227,4 +229,3 @@ const ApproveAmountsPage = () => {
 };
 
 export default ApproveAmountsPage;
-
