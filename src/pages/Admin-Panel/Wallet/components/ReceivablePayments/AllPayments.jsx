@@ -2,8 +2,11 @@ import React, { useState, useEffect } from "react";
 import { fetchReceivablePayments } from "../../../../../utility/Api";
 import Info from './Info'; // Import Info component from Info file
 import AdminPanelLayout from "../../../../../components/layout/AdminPanelLayout";
+import Pagination from "../../../Bookings/components/Pagination";
 import AccountStatementImage from "../../../../../assets/AccountsStatement.svg"; // Import the image
 import Loader from "../../../../../components/loader"; // Import the loader
+
+const PAGE_SIZE = 10;
 
 // Utility function to format the date
 const formatDate = (dateString) => {
@@ -21,12 +24,19 @@ const AllPayments = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
-        const result = await fetchReceivablePayments();
-        setData(result);
+        const result = await fetchReceivablePayments({
+          page: currentPage,
+          pageSize: PAGE_SIZE,
+        });
+        setData(result.results || []);
+        setTotalCount(result.count || 0);
       } catch (error) {
         setError(error.message);
       } finally {
@@ -34,7 +44,15 @@ const AllPayments = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [currentPage]);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   return (
     <AdminPanelLayout
@@ -55,7 +73,7 @@ const AllPayments = () => {
           </div>
         ) : error ? (
           <div>Error: {error}</div>
-        ) : data.length === 0 ? (
+        ) : totalCount === 0 ? (
           <div className="flex flex-col min-h-[400px] justify-center items-center py-8">
             <div className="flex flex-col items-center justify-center mx-auto">
               <img className="p-4" src={AccountStatementImage} alt="No img found" />
@@ -68,8 +86,12 @@ const AllPayments = () => {
             </div>
           </div>
         ) : (
-          data.map((item, index) => (
-            <div key={index} className="border-2 border-[#dcdcdc] p-4 rounded-lg mb-2">
+          <>
+            <div className="mb-4 text-sm text-slate-600">
+              Showing {(currentPage - 1) * PAGE_SIZE + 1}-{Math.min(currentPage * PAGE_SIZE, totalCount)} of {totalCount} receivable payments
+            </div>
+            {data.map((item, index) => (
+              <div key={index} className="border-2 border-[#dcdcdc] p-4 rounded-lg mb-2">
               <div className="flex flex-col sm:flex-row md:flex-col lg:flex-row justify-between flex-wrap">
                 <Info label="Package name" value={item.package_name} />
                 <div className="hidden sm:block md:hidden lg:block border-l-2 border-gray-200 mx-2"></div>
@@ -104,8 +126,16 @@ const AllPayments = () => {
                   } 
                 />
               </div>
-            </div>
-          ))
+              </div>
+            ))}
+            {totalPages > 1 ? (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            ) : null}
+          </>
         )}
       </div>
     </AdminPanelLayout>

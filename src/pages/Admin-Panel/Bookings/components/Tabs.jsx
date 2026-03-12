@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import BookingCard from "../components/BookingCard";
 import { fetchBookings } from "../../../../utility/Api";
 import NoBookings from "./NoBooking";
@@ -7,14 +7,7 @@ import Pagination from "./Pagination";
 import Select from "react-select";
 import { AppCard } from "../../../../components/ui";
 import { getPartnerSessionToken } from "../../../../utility/session";
-
-const STATUS_OPTIONS = [
-  { value: "Active", label: "Active" },
-  { value: "Pending", label: "Pending" },
-  { value: "Completed", label: "Completed" },
-  { value: "Closed", label: "Closed" },
-  { value: "Objection", label: "Objection" },
-];
+import { WORKFLOW_OPTIONS } from "../bookingWorkflowUtils";
 
 const customStyles = {
   control: (provided, state) => ({
@@ -35,89 +28,66 @@ const customStyles = {
   }),
 };
 
-const formatDate = (dateStr) => {
-  const date = new Date(dateStr);
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
-};
-
 const TabsWithSearch = () => {
+  const [searchInput, setSearchInput] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [status, setStatus] = useState("Active");
+  const [status, setStatus] = useState(WORKFLOW_OPTIONS[0].value);
+  const [totalCount, setTotalCount] = useState(0);
   const itemsPerPage = 10;
 
-  const loadBookings = async (nextStatus) => {
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      const normalizedSearchTerm = searchInput.trim();
+      if (normalizedSearchTerm === searchTerm) {
+        return;
+      }
+
+      setCurrentPage(1);
+      setSearchTerm(normalizedSearchTerm);
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [searchInput, searchTerm]);
+
+  const loadBookings = async ({ nextStatus, nextPage, nextSearchTerm }) => {
     setLoading(true);
     try {
       const partnerSessionToken = getPartnerSessionToken();
-      const data = await fetchBookings(partnerSessionToken, nextStatus);
+      const data = await fetchBookings(partnerSessionToken, {
+        workflowBucket: nextStatus,
+        bookingNumber: nextSearchTerm,
+        page: nextPage,
+        pageSize: itemsPerPage,
+      });
       setBookings(data.results || []);
+      setTotalCount(data.count || 0);
     } catch (error) {
-      if (
-        error.response &&
-        error.response.status === 404 &&
-        error.response.data.message === "No bookings found."
-      ) {
-        setBookings([]);
-      } else {
-        console.error(error);
-      }
+      setBookings([]);
+      setTotalCount(0);
+      console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadBookings(status);
-  }, [status]);
-
-  const filteredBookings = useMemo(() => {
-    return bookings.filter((booking) => {
-      const {
-        package_name,
-        package_cost,
-        user_fullname,
-        booking_status,
-        start_date,
-        end_date,
-        adults,
-        child,
-        total_price,
-        user_address_detail,
-      } = booking;
-      const city = user_address_detail?.city || "";
-      const searchLower = searchTerm.toLowerCase();
-
-      return (
-        package_name.toLowerCase().includes(searchLower) ||
-        package_cost.toString().toLowerCase().includes(searchLower) ||
-        user_fullname.toLowerCase().includes(searchLower) ||
-        booking_status.toLowerCase().includes(searchLower) ||
-        formatDate(start_date).includes(searchTerm) ||
-        formatDate(end_date).includes(searchTerm) ||
-        adults.toString().toLowerCase().includes(searchLower) ||
-        child.toString().toLowerCase().includes(searchLower) ||
-        total_price.toString().toLowerCase().includes(searchLower) ||
-        city.toLowerCase().includes(searchLower)
-      );
+    loadBookings({
+      nextStatus: status,
+      nextPage: currentPage,
+      nextSearchTerm: searchTerm,
     });
-  }, [bookings, searchTerm]);
+  }, [currentPage, searchTerm, status]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredBookings.length / itemsPerPage));
+  const totalPages = Math.max(1, Math.ceil(totalCount / itemsPerPage));
 
-  const paginatedBookings = useMemo(
-    () =>
-      filteredBookings.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage
-      ),
-    [currentPage, filteredBookings]
-  );
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   return (
     <div className="app-content-stack">
@@ -137,7 +107,7 @@ const TabsWithSearch = () => {
             <div className="flex flex-col gap-3 md:flex-row md:items-center">
               <div className="w-full md:w-[240px]">
                 <Select
-                  value={STATUS_OPTIONS.find((option) => option.value === status)}
+                  value={WORKFLOW_OPTIONS.find((option) => option.value === status)}
                   onChange={(selectedOption) => {
                     if (!selectedOption?.value) {
                       return;
@@ -145,7 +115,7 @@ const TabsWithSearch = () => {
                     setStatus(selectedOption.value);
                     setCurrentPage(1);
                   }}
-                  options={STATUS_OPTIONS}
+                  options={WORKFLOW_OPTIONS}
                   className="react-select-container"
                   classNamePrefix="react-select"
                   styles={customStyles}
@@ -154,23 +124,34 @@ const TabsWithSearch = () => {
               <div className="w-full md:w-[340px]">
                 <input
                   type="text"
-                  placeholder="Search by package, traveler, date, city..."
+                  placeholder="Search by booking number..."
                   className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm"
-                  value={searchTerm}
+                  value={searchInput}
                   onChange={(event) => {
-                    setSearchTerm(event.target.value);
-                    setCurrentPage(1);
+                    setSearchInput(event.target.value);
                   }}
                 />
               </div>
             </div>
           </AppCard>
 
-          {paginatedBookings.length > 0 ? (
+          {bookings.length > 0 ? (
             <>
+              <AppCard className="border-slate-200">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600">
+                  <p>
+                    Showing {(currentPage - 1) * itemsPerPage + 1}-
+                    {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount} bookings
+                  </p>
+                  <p>Search is matched server-side against booking number.</p>
+                </div>
+              </AppCard>
               <div className="space-y-3">
-                {paginatedBookings.map((booking) => (
-                  <BookingCard key={booking.booking_id} booking={booking} />
+                {bookings.map((booking) => (
+                  <BookingCard
+                    key={booking.booking_id || booking.booking_number}
+                    booking={booking}
+                  />
                 ))}
               </div>
               {totalPages > 1 ? (

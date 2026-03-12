@@ -77,12 +77,9 @@ const CardList = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const result = await fetchReceivablePayments();
-        if (result.message === "No payment records found for the user.") {
-          setNoData(true);
-        } else {
-          setData(result.slice(0, 5)); // Show only the first 5 payments
-        }
+        const result = await fetchReceivablePayments({ page: 1, pageSize: 5 });
+        setData(result.results || []);
+        setNoData((result.count || 0) === 0);
       } catch (error) {
         setError(error.message);
       } finally {

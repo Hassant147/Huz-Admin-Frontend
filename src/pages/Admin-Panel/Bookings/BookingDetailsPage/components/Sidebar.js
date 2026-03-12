@@ -3,35 +3,19 @@ import mail from '../../../../../assets/booking/mail.svg';
 import location from '../../../../../assets/booking/location.svg';
 import phone from '../../../../../assets/booking/phone.svg';
 import user from '../../../../../assets/booking/user.svg';
-
-const getStatusColor = (status) => {
-    switch (status) {
-        case 'Rejected':
-            return 'bg-[#FDECEA] text-[#F04438] font-semibold';
-        case 'Active':
-            return 'bg-[#c8eddb] text-[#019267] font-semibold';
-        case 'Pending':
-            return 'bg-[#fff0e1] text-[#FF9F43] font-semibold';
-        case 'Completed':
-            return 'bg-[#f1f1f2] text-[#A8AAAE] font-semibold';
-        case 'Close':
-            return 'bg-[#d6eee7] text-[#00936C] font-semibold';
-        default:
-            return 'bg-gray-200 text-gray-800 font-semibold';
-    }
-};
+import { getBookingDisplayMeta } from "../../bookingWorkflowUtils";
 
 const Sidebar = ({ booking }) => {
     if (!booking) {
         return <div>Loading...</div>;
     }
+    const statusMeta = getBookingDisplayMeta(booking);
 
     const {
         user_fullName,
         user_phone_number,
         user_email,
         user_address_detail = {},
-        booking_status,
         user_photo,
     } = booking;
 
@@ -48,8 +32,8 @@ const Sidebar = ({ booking }) => {
 
     return (
         <div className="w-full pr-4 pb-4 pl-1 pt-1 bg-white shadow-md rounded-lg">
-            <div className={`${getStatusColor(booking_status)} w-24 px-4 py-1.5 font-extralight text-center text-sm rounded-md mb-4 mx-auto sm:mx-0`}>
-                {booking_status}
+            <div className={`${statusMeta.badgeTone} w-auto px-4 py-1.5 font-extralight text-center text-sm rounded-md mb-4 mx-auto sm:mx-0`}>
+                {statusMeta.label}
             </div>
 
             <div className="px-4 flex flex-col items-center">

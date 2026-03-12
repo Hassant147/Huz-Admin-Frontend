@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { fetchBookingDetails } from "../../../../../utility/Super-Admin-Api";
+import { fetchSettlementReviewBookingDetails } from "../../../../../utility/Super-Admin-Api";
 import Loader from "../../../../../components/loader";
 import PackageDetails from "../../ApproveAmountsPages/BookingDetailsPage/PackageDetails";
 import BookingInfo from "../../ApproveAmountsPages/BookingDetailsPage/BookingInfo";
@@ -25,10 +25,11 @@ const BookingDetailsComponent = ({ booking }) => {
       }
 
       const { partner_session_token, booking_number } = booking;
-      const { status, data, error: requestError } = await fetchBookingDetails(
-        partner_session_token,
-        booking_number
-      );
+      const { status, data, error: requestError } =
+        await fetchSettlementReviewBookingDetails(
+          partner_session_token,
+          booking_number
+        );
 
       if (status === 200 && data) {
         setBookingDetails(data);

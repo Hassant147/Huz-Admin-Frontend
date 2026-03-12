@@ -18,6 +18,36 @@ const apiClient = axios.create({
   },
 });
 
+const EMPTY_PAGINATED_RESPONSE = {
+  count: 0,
+  next: null,
+  previous: null,
+  results: [],
+};
+
+const normalizePaginatedResponse = (payload) => {
+  if (Array.isArray(payload)) {
+    return {
+      count: payload.length,
+      next: null,
+      previous: null,
+      results: payload,
+    };
+  }
+
+  if (payload && typeof payload === "object") {
+    const results = Array.isArray(payload.results) ? payload.results : [];
+    return {
+      count: Number(payload.count) || results.length,
+      next: payload.next || null,
+      previous: payload.previous || null,
+      results,
+    };
+  }
+
+  return EMPTY_PAGINATED_RESPONSE;
+};
+
 // Function to submit transport package details
 export const submitTransportPackage = async (vehicleDetails, category) => {
   const formData = new FormData();
@@ -670,14 +700,37 @@ export const deleteBankAccount = async (partnerSessionToken, account_id) => {
   }
 };
 
-//Booking API to fetch bookings
-export const fetchBookings = async (partnerSessionToken, status) => {
+// Booking API to fetch paginated bookings
+export const fetchBookings = async (
+  partnerSessionToken,
+  {
+    workflowBucket,
+    bookingNumber = "",
+    page = 1,
+    pageSize = 10,
+  } = {}
+) => {
   try {
     const response = await apiClient.get(
-      `/bookings/get_all_booking_detail_for_partner/?partner_session_token=${partnerSessionToken}&booking_status=${status}`
+      "/bookings/get_all_booking_detail_for_partner/",
+      {
+        params: {
+          partner_session_token: partnerSessionToken,
+          workflow_bucket: workflowBucket,
+          page,
+          page_size: pageSize,
+          ...(bookingNumber ? { booking_number: bookingNumber } : {}),
+        },
+      }
     );
-    return response.data;
+    return normalizePaginatedResponse(response.data);
   } catch (error) {
+    if (
+      error.response?.status === 404 &&
+      error.response?.data?.message === "No bookings found."
+    ) {
+      return EMPTY_PAGINATED_RESPONSE;
+    }
     console.error("Error fetching bookings:", error);
     throw error;
   }
@@ -799,16 +852,18 @@ export const deleteBookingDocument = async (props) => {
         data: props,
       }
     );
+    return response.data;
   } catch (error) {
     console.error(
       "Delete request error:",
       error.response ? error.response.data : error
     );
+    throw error;
   }
 };
 
 // function to update airline details on booking forms
-export const updateAirlineDetails = (
+export const updateAirlineDetails = async (
   partnerSessionToken,
   bookingNumber,
   airline_id,
@@ -827,12 +882,16 @@ export const updateAirlineDetails = (
     flight_to: flightTo,
   };
 
-  apiClient
-    .put("/bookings/manage_booking_airline_details/", data)
-    .then((response) => {})
-    .catch((error) => {
-      console.error(error);
-    });
+  try {
+    const response = await apiClient.put(
+      "/bookings/manage_booking_airline_details/",
+      data
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error updating airline details:", error);
+    throw error;
+  }
 };
 
 //function to Post transport/Hotel forms in booking
@@ -871,6 +930,7 @@ export const postTransportDetails = async (formData) => {
     return response.data;
   } catch (error) {
     console.error("Failed to post transport details:", error);
+    throw error;
   }
 };
 export const addWithdrawRequest = async (
@@ -897,18 +957,10 @@ export const addWithdrawRequest = async (
 
 //function to edit transport/Hotel forms in booking
 export const updateTransportDetails = async (formData) => {
-  const config = {
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: "Basic a2V6dG9ncm91cDpoMnNvNGgybw==",
-    },
-  };
-
   try {
-    const response = await axios.put(
-      `${process.env.REACT_APP_API_BASE_URL}/bookings/manage_booking_hotel_or_transport_details/`,
-      JSON.stringify(formData),
-      config
+    const response = await apiClient.put(
+      "/bookings/manage_booking_hotel_or_transport_details/",
+      formData
     );
     return response.data;
   } catch (error) {
@@ -943,15 +995,44 @@ export const getOverPartnerComplaints = async (partnerSessionToken) => {
   }
 };
 
-//get all complaints
-export const getPartnerAllComplaints = async (partnerSessionToken, status) => {
+// Get all complaints with server-driven pagination/filtering
+export const getPartnerAllComplaints = async (
+  partnerSessionToken,
+  {
+    status = "",
+    complaintId = "",
+    search = "",
+    fromDate = "",
+    toDate = "",
+    page = 1,
+    pageSize = 8,
+  } = {}
+) => {
   try {
     const response = await apiClient.get(
-      `/bookings/get_all_complaints_for_partner/?partner_session_token=${partnerSessionToken}&complaint_status=${status}`
+      "/bookings/get_all_complaints_for_partner/",
+      {
+        params: {
+          partner_session_token: partnerSessionToken,
+          page,
+          page_size: pageSize,
+          ...(status ? { complaint_status: status } : {}),
+          ...(complaintId ? { complaint_id: complaintId } : {}),
+          ...(search ? { search } : {}),
+          ...(fromDate ? { from_date: fromDate } : {}),
+          ...(toDate ? { to_date: toDate } : {}),
+        },
+      }
     );
 
-    return response.data;
+    return normalizePaginatedResponse(response.data);
   } catch (error) {
+    if (
+      error.response?.status === 404 &&
+      error.response?.data?.message === "Complaint detail not found."
+    ) {
+      return EMPTY_PAGINATED_RESPONSE;
+    }
     console.error("Error in getPartnerAllComplaints:", error); // Debugging line
     throw error;
   }
@@ -1134,8 +1215,11 @@ export const fetchYearlyEarningStatistics = async (
   }
 };
 
-//wallet
-export const fetchReceivablePayments = async () => {
+// Wallet receivable payments
+export const fetchReceivablePayments = async ({
+  page = 1,
+  pageSize = 10,
+} = {}) => {
   const { partner_session_token } = JSON.parse(
     localStorage.getItem("SignedUp-User-Profile")
   );
@@ -1146,13 +1230,15 @@ export const fetchReceivablePayments = async () => {
       {
         params: {
           partner_session_token: partner_session_token,
+          page,
+          page_size: pageSize,
         },
       }
     );
-    return response.data;
+    return normalizePaginatedResponse(response.data);
   } catch (error) {
     if (error.response && error.response.status === 404) {
-      return { message: "No payment records found for the user." };
+      return EMPTY_PAGINATED_RESPONSE;
     }
     throw new Error("Failed to fetch data");
   }

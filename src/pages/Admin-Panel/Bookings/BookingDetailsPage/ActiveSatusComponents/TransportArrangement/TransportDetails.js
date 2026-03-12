@@ -3,27 +3,33 @@ import { useNavigate } from 'react-router-dom';
 import { BookingContext } from '../../../../../../context/BookingContext';
 import phone from '../../../../../../assets/booking/phone.svg';
 import user from '../../../../../../assets/booking/user.svg';
+import { buildAdminBookingSubflowPath } from '../../../bookingRouteUtils';
 
-const TransportDetails = () => {
+const TransportDetails = ({ canManage = true }) => {
   const { booking } = useContext(BookingContext);
   const navigate = useNavigate();
+  const bookingNumber = booking?.booking_number || '';
 
   const transportDetails = booking.booking_hotel_and_transport_details.filter(detail => detail.detail_for === "Transport");
 
   const handleEdit = () => {
-    navigate("/package/transport-arrangement", { state: { isEditing: true } });
+    navigate(buildAdminBookingSubflowPath(bookingNumber, "transport-arrangement"), {
+      state: { isEditing: true },
+    });
   };
 
   return (
     <div className="space-y-2 pb-2">
       <div className="flex justify-between items-center">
         <h2 className="text-base font-medium text-gray-500">Shared Transport Details</h2>
-        <button
-          onClick={handleEdit}
-          className="text-white text-xs bg-[#00936C] hover:bg-[#007B54] rounded px-3 py-1.5"
-        >
-          Edit/Update
-        </button>
+        {canManage ? (
+          <button
+            onClick={handleEdit}
+            className="text-white text-xs bg-[#00936C] hover:bg-[#007B54] rounded px-3 py-1.5"
+          >
+            Edit/Update
+          </button>
+        ) : null}
       </div>
       <div className="bg-gray-50 rounded space-y-4">
         {transportDetails.length > 0 ? (

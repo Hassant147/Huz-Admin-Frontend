@@ -4,6 +4,13 @@ import { useNavigate } from "react-router-dom";
 import "react-toastify/dist/ReactToastify.css";
 import { confirmBookingPayment } from "../../../../../../utility/Super-Admin-Api";
 import { AppButton, AppCard, AppSectionHeader } from "../../../../../../components/ui";
+import {
+  getPaymentStatusLabel,
+  getReviewQueueKey,
+  getReviewStageLabel,
+  getStagePayment,
+  getStagePaymentStatus,
+} from "../../bookingReviewUtils";
 
 const RESPONSE_MESSAGE_MAP = {
   400: "Bad request: missing or invalid input data.",
@@ -12,30 +19,16 @@ const RESPONSE_MESSAGE_MAP = {
   409: "This payment cannot be reviewed in its current state.",
 };
 
-const normalizePaymentValue = (value = "") => `${value || ""}`.trim().toLowerCase();
-
-const getPaymentTimestamp = (payment = {}) => {
-  const rawValue =
-    payment?.transaction_time ||
-    payment?.updated_at ||
-    payment?.created_at;
-  const timestamp = rawValue ? new Date(rawValue).getTime() : Number.NaN;
-  return Number.isFinite(timestamp) ? timestamp : 0;
-};
-
 const getReviewablePayment = (booking = {}) => {
-  const payments = Array.isArray(booking?.payment_detail) ? booking.payment_detail : [];
-  const sortedPayments = [...payments].sort(
-    (left, right) => getPaymentTimestamp(right) - getPaymentTimestamp(left)
-  );
+  const queueKey = getReviewQueueKey(booking);
+  if (queueKey === "minimum_under_review") {
+    return getStagePayment(booking, "minimum");
+  }
+  if (queueKey === "full_under_review") {
+    return getStagePayment(booking, "full");
+  }
 
-  return (
-    sortedPayments.find(
-      (payment) => normalizePaymentValue(payment?.payment_status) !== "approved"
-    ) ||
-    sortedPayments[0] ||
-    null
-  );
+  return null;
 };
 
 const Action = ({ booking }) => {
@@ -44,18 +37,11 @@ const Action = ({ booking }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const reviewablePayment = useMemo(() => getReviewablePayment(booking), [booking]);
-  const paymentStageLabel = useMemo(() => {
-    const stage = normalizePaymentValue(
-      reviewablePayment?.full_or_minimum || reviewablePayment?.transaction_type
-    );
-    if (stage === "full") {
-      return "Remaining payment";
-    }
-    if (stage === "minimum") {
-      return "Initial payment";
-    }
-    return "Payment";
-  }, [reviewablePayment]);
+  const paymentStageLabel = useMemo(() => getReviewStageLabel(booking), [booking]);
+  const canReview = useMemo(
+    () => ["minimum_under_review", "full_under_review"].includes(getReviewQueueKey(booking)),
+    [booking]
+  );
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -106,7 +92,7 @@ const Action = ({ booking }) => {
       <form onSubmit={handleSubmit} className="app-content-stack">
         <AppSectionHeader
           title="Review Decision"
-          subtitle="Approve booking payment verification or reject this request."
+          subtitle="Approve or reject the current payment proof under Huz admin review."
         />
 
         <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-ink-700">
@@ -117,7 +103,16 @@ const Action = ({ booking }) => {
               {reviewablePayment?.transaction_number || "Not provided"}
             </span>
           </p>
+          <p className="mt-1 text-xs text-ink-500">
+            Current status: {getPaymentStatusLabel(getStagePaymentStatus(booking, paymentStageLabel))}
+          </p>
         </div>
+
+        {!canReview ? (
+          <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-ink-700">
+            This booking is not in an admin-review queue right now. Open it from an under-review tab to take action.
+          </div>
+        ) : null}
 
         <div className="grid gap-2 sm:grid-cols-2">
           <DecisionTile
@@ -155,6 +150,7 @@ const Action = ({ booking }) => {
           <AppButton
             type="submit"
             className="min-w-[190px]"
+            disabled={!canReview}
             loading={isSubmitting}
             loadingLabel="Applying..."
           >

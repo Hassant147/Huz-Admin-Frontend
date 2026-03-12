@@ -6,19 +6,10 @@ import {
   FiDollarSign,
   FiMapPin,
   FiUserCheck,
-  FiUsers,
 } from "react-icons/fi";
 import { AppCard, AppContainer } from "../../components/ui";
 
 const DASHBOARD_LINKS = [
-  {
-    to: "/access-profile",
-    title: "Access Profiles",
-    description: "Search and inspect partner profile records.",
-    priority: "Lookup",
-    icon: FiUsers,
-    accentClassName: "bg-sky-50 text-sky-700 border-sky-100",
-  },
   {
     to: "/pending-profiles",
     title: "Pending Profiles",
@@ -84,7 +75,7 @@ const Dashboard = () => {
             <div className="grid grid-cols-2 gap-2 sm:min-w-[280px]">
               <SummaryTile label="Modules" value={`${DASHBOARD_LINKS.length}`} />
               <SummaryTile label="Approval Flows" value="2" />
-              <SummaryTile label="Profile Queues" value="2" />
+              <SummaryTile label="Profile Queues" value="1" />
               <SummaryTile label="Action Ready" value="Yes" />
             </div>
           </div>

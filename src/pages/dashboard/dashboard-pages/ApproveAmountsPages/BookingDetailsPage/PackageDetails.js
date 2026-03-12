@@ -19,7 +19,7 @@ const PackageDetails = ({ booking }) => {
   const { selectedCurrency, exchangeRates } = useContext(CurrencyContext);
 
   const convertedCost = useMemo(() => {
-    const baseCost = Number(booking?.base_cost || 0);
+    const baseCost = Number(booking?.base_cost ?? booking?.package_cost ?? 0);
     if (!exchangeRates?.[selectedCurrency] || !exchangeRates?.PKR) {
       return baseCost;
     }

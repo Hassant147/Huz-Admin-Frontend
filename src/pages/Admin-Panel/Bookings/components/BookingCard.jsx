@@ -1,31 +1,16 @@
 import React from "react";
 import view from "../../../../assets/view.svg";
 import { useNavigate } from "react-router-dom";
-
-// Function to determine the color of the status label based on the booking status
-const getStatusColor = (status) => {
-  switch (status) {
-    case "Objection":
-      return "bg-[#FDECEA] text-[#F04438] font-semibold"; // Red for rejected
-    case "Active":
-      return "bg-[#c8eddb] text-[#019267] font-semibold"; // Green for active
-    case "Pending":
-      return "bg-[#fff0e1] text-[#FF9F43] font-semibold"; // Orange for pending
-    case "Completed":
-      return "bg-[#f1f1f2] text-[#A8AAAE] font-semibold"; // Blue for completed
-    case "Closed":
-      return "bg-[#d6eee7] text-[#00936C] font-semibold"; // Grey for closed
-    default:
-      return "bg-gray-200 text-gray-800 font-semibold"; // Default gray
-  }
-};
+import { getBookingDisplayMeta } from "../bookingWorkflowUtils";
+import { buildAdminBookingDetailsPath } from "../bookingRouteUtils";
 
 const BookingCard = ({ booking }) => {
   const { user_address_detail } = booking;
+  const statusMeta = getBookingDisplayMeta(booking);
   const navigate = useNavigate();
 
   const handleCardClick = (booking_number) => {
-    navigate(`/bookingdetails?booking_number=${booking_number}`);
+    navigate(buildAdminBookingDetailsPath(booking_number));
   };
 
   return (
@@ -85,9 +70,9 @@ const BookingCard = ({ booking }) => {
       {/* Column 5 */}
       <div className="hidden lg:flex items-center justify-start pl-8 w-full md:w-1/6">
         <span
-          className={`${getStatusColor(booking.booking_status)} px-4 py-1.5 text-sm rounded-md font-semibold text-left`}
+          className={`${statusMeta.badgeTone} px-4 py-1.5 text-sm rounded-md font-semibold text-left`}
         >
-          {booking.booking_status}
+          {statusMeta.label}
         </span>
       </div>
 
@@ -105,9 +90,9 @@ const BookingCard = ({ booking }) => {
       {/* Status label for mobile view */}
       <div className="absolute top-2 right-2 md:hidden">
         <span
-          className={`${getStatusColor(booking.booking_status)} px-4 py-1.5 text-sm rounded-md font-semibold`}
+          className={`${statusMeta.badgeTone} px-4 py-1.5 text-sm rounded-md font-semibold`}
         >
-          {booking.booking_status}
+          {statusMeta.label}
         </span>
       </div>
     </div>

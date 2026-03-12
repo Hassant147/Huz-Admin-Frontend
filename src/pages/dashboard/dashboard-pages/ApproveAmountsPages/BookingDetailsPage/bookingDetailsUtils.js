@@ -3,10 +3,20 @@ export const EMPTY_VALUE = "Not available";
 const STATUS_STYLE_MAP = {
   rejected: "bg-red-50 text-red-600",
   active: "bg-brand-50 text-brand-700",
+  ready_for_operator: "bg-brand-50 text-brand-700",
+  in_fulfillment: "bg-brand-50 text-brand-700",
+  traveler_details_pending: "bg-blue-50 text-blue-700",
+  awaiting_final_payment: "bg-amber-50 text-amber-700",
+  ready_for_travel: "bg-slate-100 text-slate-600",
   pending: "bg-amber-50 text-amber-700",
   completed: "bg-slate-100 text-slate-600",
   close: "bg-emerald-50 text-emerald-700",
   paid: "bg-brand-50 text-brand-700",
+  hold: "bg-amber-50 text-amber-700",
+  cancelled: "bg-red-50 text-red-600",
+  expired: "bg-red-50 text-red-600",
+  operator_objection: "bg-red-50 text-red-600",
+  reported: "bg-orange-50 text-orange-700",
 };
 
 export const getStatusPillClassName = (status) => {
@@ -73,4 +83,3 @@ export const parseCommaSeparated = (value) => {
     .map((item) => item.trim())
     .filter(Boolean);
 };
-

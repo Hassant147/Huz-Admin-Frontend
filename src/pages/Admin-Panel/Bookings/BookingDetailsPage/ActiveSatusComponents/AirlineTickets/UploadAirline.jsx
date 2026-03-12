@@ -8,7 +8,6 @@ import {
   PostAirlineDetails,
   updateAirlineDetails,
   deleteBookingDocument,
-  getBookingDetails,
   updateBookingDocumentStatus
 } from '../../../../../../utility/Api';
 import toast, { Toaster } from 'react-hot-toast';
@@ -222,13 +221,14 @@ const UploadAirline = ({ booking, isEditing }) => {
             partner_session_token: booking.partner_session_token,
           };
           await deleteBookingDocument(props);
+          setSelectedFiles(prevFiles => prevFiles.filter(file => file.file !== fileToDelete.file));
           toast.success('Airline ticket deleted successfully!');
-          const updatedBooking = await getBookingDetails(booking.partner_session_token, booking.booking_number);
-          // Assuming setBooking is available here if needed
         } catch (error) {
           console.error('Failed to delete airline ticket:', error);
           toast.error('Failed to delete airline ticket.');
+          return;
         }
+        return;
       }
     }
     setSelectedFiles(prevFiles => prevFiles.filter(file => file.file !== fileToDelete.file));

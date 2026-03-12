@@ -1,4 +1,4 @@
-import React, { useState, useRef, useContext } from 'react';
+import React, { useState, useRef, useContext, useMemo } from 'react';
 import { updateBookingStatus } from '../../../../utility/Api';
 import toast, { Toaster } from 'react-hot-toast';
 import { ClipLoader } from 'react-spinners';
@@ -13,12 +13,34 @@ const Pending = ({ booking }) => {
   const { partner_session_token } = JSON.parse(localStorage.getItem('SignedUp-User-Profile'));
   const { fetchBookingDetails } = useContext(BookingContext);
   const formRef = useRef(null);
-  const [selectedStatus, setSelectedStatus] = useState('Active');
+
+  const actionBlockedReason = useMemo(() => {
+    if (booking?.operator_can_act) {
+      return '';
+    }
+
+    if (booking?.full_payment_status !== 'APPROVED') {
+      return 'Full payment is still pending Huz admin approval.';
+    }
+
+    if (booking?.client_can_edit_travellers) {
+      return 'Traveler details are still incomplete.';
+    }
+
+    return 'This booking is not actionable yet.';
+  }, [booking]);
   
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    if (!booking) {
+      toast.error('Booking details are not available.');
+      return;
+    }
 
+    if (!booking?.operator_can_act) {
+      toast.error(actionBlockedReason || 'This booking is not actionable yet.');
+      return;
+    }
     let hasError = false;
 
     if (!status) {
@@ -35,19 +57,14 @@ const Pending = ({ booking }) => {
       setRemarksError('');
     }
 
-    if (!booking) {
-      toast.error('Booking details are not available.');
-      setLoading(false);
+    if (hasError) {
       return;
     }
 
-    if (hasError) {
-      setLoading(false);
-      return;
-    }
+    setLoading(true);
 
     try {
-      const updatedBooking = await updateBookingStatus(
+      await updateBookingStatus(
         partner_session_token,
         booking.booking_number,
         status,
@@ -64,11 +81,20 @@ const Pending = ({ booking }) => {
   };
 
   const handleButtonClick = () => {
-    formRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+    formRef.current?.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
   };
 
   if (!booking) {
     return <div>Loading booking details...</div>;
+  }
+
+  if (actionBlockedReason) {
+    return (
+      <div className="p-4 bg-white border border-gray-300 shadow-sm rounded-lg">
+        <h2 className="text-lg font-medium text-gray-600 mb-2">Action unavailable</h2>
+        <p className="text-sm text-[#b42318]">{actionBlockedReason}</p>
+      </div>
+    );
   }
 
   return (
@@ -83,23 +109,23 @@ const Pending = ({ booking }) => {
               <input
                 type="radio"
                 name="status"
-                value="Active"
-                checked={status === 'Active'}
+                value="IN_FULFILLMENT"
+                checked={status === 'IN_FULFILLMENT'}
                 onChange={(e) => setStatus(e.target.value)}
                 className="form-radio text-green-500"
               />
-              <span className="ml-2 text-xs font-normal text-gray-600">Accept & In-Progress</span>
+              <span className="ml-2 text-xs font-normal text-gray-600">Accept and start fulfillment</span>
             </label>
             <label className="inline-flex items-center ml-6">
               <input
                 type="radio"
                 name="status"
-                value="Objection"
-                checked={status === 'Objection'}
+                value="OPERATOR_OBJECTION"
+                checked={status === 'OPERATOR_OBJECTION'}
                 onChange={(e) => setStatus(e.target.value)}
                 className="form-radio text-red-500"
               />
-              <span className="ml-2 text-xs font-normal text-gray-600">Objection ?</span>
+              <span className="ml-2 text-xs font-normal text-gray-600">Raise objection</span>
             </label>
           </div>
           {statusError && <p className="text-red-500 text-xs mt-1">{statusError}</p>}

@@ -1,19 +1,25 @@
-import React, { useContext, useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import React, { useContext, useState } from "react";
 import CustomLoader from "../../../../components/loader";
 import AdminPanelLayout from "../../../../components/layout/AdminPanelLayout";
 import { BookingContext } from "../../../../context/BookingContext";
 import Pending from "./Pending";
 import Objection from "./Objection";
 import Active from "./Active";
+import ViewOnly from "./ViewOnly";
 import Completed from "./Completed";
-import Close from "./Close";
+import History from "./History";
 import Sidebar from "./components/Sidebar";
 import PackageDetails from "./components/PackageDetails";
 import BookingInfo from "./components/BookingInfo";
 import Error from "../components/Error";
 import ReviewAndRating from "./components/ReviewAndRating";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import {
+  getBookingWorkflowScreen,
+  normalizeIssueStatus,
+} from "../bookingWorkflowUtils";
+import ReportedTravelers from "./components/ReportedTravelers";
+import useAdminBookingLoader from "./useAdminBookingLoader";
 
 const REACT_APP_API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
@@ -46,41 +52,46 @@ const BookingDetailsContent = ({ booking, loading, error }) => {
   }
 
   const renderComponent = () => {
-    switch (booking.booking_status) {
-      case "Pending":
+    switch (getBookingWorkflowScreen(booking)) {
+      case "VIEW_ONLY":
+        return <ViewOnly booking={booking} />;
+      case "READY":
         return <Pending booking={booking} />;
-      case "Objection":
+      case "ISSUE":
         return <Objection booking={booking} />;
-      case "Active":
+      case "FULFILLMENT":
         return (
           <Active
             booking={booking}
             fetchBookingDetails={refreshBookingDetails}
           />
         );
-      case "Completed":
+      case "READY_FOR_TRAVEL":
+      case "COMPLETED":
         return <Completed booking={booking} />;
-      case "Close":
-        return <Close booking={booking} />;
+      case "HISTORY":
+        return <History booking={booking} />;
       default:
         return <div>No booking status found</div>;
     }
   };
 
-  const sortedObjections = booking.booking_objections.sort(
+  const sortedObjections = [...(booking?.booking_objections || [])].sort(
     (a, b) => new Date(a.create_time) - new Date(b.create_time)
   );
+  const issueStatus = normalizeIssueStatus(booking?.issue_status);
 
   return (
     <div className="flex lg:flex-row flex-col lg:h-full mb-10">
       <div className="lg:w-[25%] space-y-6">
         <Sidebar booking={booking} />
-        {(booking.booking_status === "Completed" ||
-          booking.booking_status === "Close") && (
+        {(booking?.booking_status === "READY_FOR_TRAVEL" ||
+          booking?.booking_status === "COMPLETED") && (
           <ReviewAndRating booking={booking} />
         )}
       </div>
       <div className="lg:w-2/3 lg:px-4 py-4 lg:py-0 space-y-4 flex-grow">
+        {issueStatus === "REPORTED" ? <ReportedTravelers booking={booking} /> : null}
         <PackageDetails booking={booking} />
         <BookingInfo booking={booking} />
 
@@ -166,22 +177,10 @@ const BookingDetailsContent = ({ booking, loading, error }) => {
   );
 };
 
-const useQuery = () => {
-  return new URLSearchParams(useLocation().search);
-};
-
 const BookingDetails = () => {
-  const query = useQuery();
-  const bookingNumber = query.get("booking_number");
-  const { booking, fetchBookingDetails, loading, error } =
-    useContext(BookingContext);
-
-  useEffect(() => {
-    if (bookingNumber) {
-      localStorage.setItem("bookingNumber", bookingNumber);
-      fetchBookingDetails(bookingNumber);
-    }
-  }, [bookingNumber, fetchBookingDetails]);
+  const { booking, loading, error } = useAdminBookingLoader({
+    refreshIfResolved: true,
+  });
 
   return (
     <AdminPanelLayout
@@ -193,7 +192,7 @@ const BookingDetails = () => {
         <BookingDetailsContent
           booking={booking}
           loading={loading}
-          error={error}
+          error={!booking || Boolean(error)}
         />
       </div>
     </AdminPanelLayout>

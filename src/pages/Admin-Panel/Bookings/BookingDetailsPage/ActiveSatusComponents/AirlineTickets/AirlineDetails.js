@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaFilePdf, FaFileWord, FaFileImage } from 'react-icons/fa';
 import dlt from '../../../../../../assets/booking/delete.svg';
-import toast from 'react-hot-toast';
+import { buildAdminBookingSubflowPath } from '../../../bookingRouteUtils';
 
 const getFileIcon = (filename) => {
   const extension = filename.split('.').pop().toLowerCase();
@@ -21,7 +21,7 @@ const getFileIcon = (filename) => {
   }
 };
 
-const AirlineDetails = ({ booking, onDelete }) => {
+const AirlineDetails = ({ booking, onDelete, canManage = true }) => {
   const [airlineDocuments, setAirlineDocuments] = useState([]);
   const { REACT_APP_API_BASE_URL } = process.env;
   const navigate = useNavigate();
@@ -38,19 +38,23 @@ const AirlineDetails = ({ booking, onDelete }) => {
   };
 
   const handleEdit = () => {
-    navigate("/package/airline-tickets", { state: { isEditing: true } });
+    navigate(buildAdminBookingSubflowPath(booking?.booking_number, "airline-tickets"), {
+      state: { isEditing: true },
+    });
   };
 
   return (
     <div className="space-y-2 pb-2">
       <div className="flex justify-between items-center">
         <h2 className="text-base font-medium text-gray-500">Shared Airline Tickets Detail</h2>
-        <button
-          onClick={handleEdit}
-          className="text-white text-xs bg-[#00936C] hover:bg-[#007B54] rounded px-3 py-1.5"
-        >
-          Edit/Update
-        </button>
+        {canManage ? (
+          <button
+            onClick={handleEdit}
+            className="text-white text-xs bg-[#00936C] hover:bg-[#007B54] rounded px-3 py-1.5"
+          >
+            Edit/Update
+          </button>
+        ) : null}
       </div>
       <div className="bg-gray-50 rounded space-y-4">
         {booking.booking_airline_details.map((detail, index) => (
@@ -80,9 +84,11 @@ const AirlineDetails = ({ booking, onDelete }) => {
                   {doc.document_link.split('/').pop()}
                 </p>
               </div>
-              <button onClick={() => onDelete(doc.document_id)} className="text-red-500 hover:text-red-600">
-                <img src={dlt} alt="delete" />
-              </button>
+              {canManage && onDelete ? (
+                <button onClick={() => onDelete(doc.document_id)} className="text-red-500 hover:text-red-600">
+                  <img src={dlt} alt="delete" />
+                </button>
+              ) : null}
             </div>
           ))}
         </div>

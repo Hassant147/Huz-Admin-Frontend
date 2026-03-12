@@ -9,37 +9,24 @@ import HotelDetails from './ActiveSatusComponents/HotelArrangement/HotelDetails'
 
 import { deleteBookingDocument } from '../../../../utility/Api';
 import toast from 'react-hot-toast';
+import { buildAdminBookingSubflowPath } from '../bookingRouteUtils';
 
 const Active = () => {
   const { booking, refreshBookingDetails } = useContext(BookingContext);
-  const { booking_documents_status, booking_required_documents = [], booking_airline_details = [], transport_details = [], hotel_details = [] } = booking || {};
+  const { booking_documents_status, transport_details = [], hotel_details = [] } = booking || {};
   const documentStatus = booking_documents_status?.[0] || {};
+  const bookingNumber = booking?.booking_number || '';
 
   const [completed, setCompleted] = useState(false);
 
   useEffect(() => {
-    const allCompleted = documentStatus.is_visa_completed && documentStatus.is_airline_detail_completed && documentStatus.is_transport_completed && documentStatus.is_hotel_completed;
-    if (allCompleted && booking.booking_status !== 'Completed') {
-      // Simulate updating status to 'Completed'
-      // In a real scenario, this should call an API to update the status in the backend
-      const updatedBooking = { ...booking, booking_status: 'Completed' };
-      refreshBookingDetails(updatedBooking.booking_number, 'booking_documents_status');
-    }
-  }, [
-    documentStatus.is_visa_completed,
-    documentStatus.is_airline_detail_completed,
-    documentStatus.is_transport_completed,
-    documentStatus.is_hotel_completed,
-    booking.booking_status,
-    booking.booking_number,
-    refreshBookingDetails
-  ]);
-
-  useEffect(() => {
-    if (booking.booking_status === 'Completed') {
+    if (booking?.booking_status === 'READY_FOR_TRAVEL' || booking?.booking_status === 'COMPLETED') {
       setCompleted(true);
+      return;
     }
-  }, [booking.booking_status]);
+
+    setCompleted(false);
+  }, [booking?.booking_status]);
 
   const handleDelete = async (documentId, type) => {
     try {
@@ -94,7 +81,7 @@ const Active = () => {
             </p>
           </div>
           <Link
-            to={"/package/upload-evisa"}
+            to={buildAdminBookingSubflowPath(bookingNumber, "upload-evisa")}
             className="bg-[#00936C] md:text-[15px] text-[10px] justify-center text-center w-full lg:w-[155px] xl:w-[155px] hover:bg-green-900 text-white font-medium py-2 rounded"
           >
             Share Details
@@ -127,7 +114,7 @@ const Active = () => {
             </p>
           </div>
           <Link
-            to={"/package/airline-tickets"}
+            to={buildAdminBookingSubflowPath(bookingNumber, "airline-tickets")}
             className="bg-[#00936C] md:text-[15px] text-[10px] justify-center text-center w-full lg:w-[155px] xl:w-[155px] hover:bg-green-900 text-white font-medium py-2 rounded"
           >
             Share Details
@@ -160,7 +147,7 @@ const Active = () => {
             </p>
           </div>
           <Link
-            to={"/package/transport-arrangement"}
+            to={buildAdminBookingSubflowPath(bookingNumber, "transport-arrangement")}
             className="bg-[#00936C] md:text-[15px] text-[10px] justify-center text-center w-full lg:w-[155px] xl:w-[155px] hover:bg-green-900 text-white font-medium py-2 rounded"
           >
             Share Details
@@ -193,7 +180,7 @@ const Active = () => {
             </p>
           </div>
           <Link
-            to={"/package/hotel-arrangement"}
+            to={buildAdminBookingSubflowPath(bookingNumber, "hotel-arrangement")}
             className="bg-[#00936C] md:text-[15px] text-[10px] justify-center text-center w-full lg:w-[155px] xl:w-[155px] hover:bg-green-900 text-white font-medium py-2 rounded"
           >
             Share Details

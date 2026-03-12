@@ -2,6 +2,7 @@ import React from "react";
 import { AppButton, AppCard, AppEmptyState, AppSectionHeader } from "../../../../../components/ui";
 import errorIcon from "../../../../../assets/error.svg";
 import { formatDateTime, withFallback } from "./bookingDetailsUtils";
+import { getPaymentStatusLabel } from "../bookingReviewUtils";
 
 const TransactionDetails = ({ booking }) => {
   const paymentDetails = booking?.payment_detail || [];
@@ -39,6 +40,17 @@ const TransactionDetails = ({ booking }) => {
                     <InfoTile
                       label="Transaction Number"
                       value={withFallback(payment.transaction_number)}
+                    />
+                    <InfoTile
+                      label="Stage"
+                      value={withFallback(
+                        payment.full_or_minimum || payment.transaction_type,
+                        "Payment"
+                      )}
+                    />
+                    <InfoTile
+                      label="Review Status"
+                      value={getPaymentStatusLabel(payment.payment_status)}
                     />
                   </div>
 

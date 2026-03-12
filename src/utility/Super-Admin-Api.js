@@ -76,6 +76,67 @@ const normalizePendingCompany = (company = {}) => ({
   mailing_detail: company.mailing_detail || {},
 });
 
+const EMPTY_PAGINATED_RESPONSE = {
+  count: 0,
+  next: null,
+  previous: null,
+  results: [],
+  meta: {},
+};
+
+const normalizePaginatedResponse = (payload) => {
+  if (Array.isArray(payload)) {
+    return {
+      ...EMPTY_PAGINATED_RESPONSE,
+      count: payload.length,
+      results: payload,
+    };
+  }
+
+  if (payload && typeof payload === "object") {
+    const results = Array.isArray(payload.results) ? payload.results : [];
+    return {
+      count: Number(payload.count) || results.length,
+      next: payload.next || null,
+      previous: payload.previous || null,
+      results,
+      meta: payload.meta && typeof payload.meta === "object" ? payload.meta : {},
+    };
+  }
+
+  return EMPTY_PAGINATED_RESPONSE;
+};
+
+const mergeSettlementReviewBookingDetail = (detailBooking = {}, paymentSource = {}) => {
+  if (!detailBooking || typeof detailBooking !== "object") {
+    return paymentSource;
+  }
+
+  if (!paymentSource || typeof paymentSource !== "object") {
+    return detailBooking;
+  }
+
+  return {
+    ...detailBooking,
+    payment_detail: Array.isArray(paymentSource.payment_detail)
+      ? paymentSource.payment_detail
+      : [],
+    minimum_payment_status:
+      paymentSource.minimum_payment_status || detailBooking.minimum_payment_status,
+    full_payment_status:
+      paymentSource.full_payment_status || detailBooking.full_payment_status,
+    remaining_amount_due:
+      paymentSource.remaining_amount_due ?? detailBooking.remaining_amount_due,
+    payment_correction_expires_at:
+      paymentSource.payment_correction_expires_at ||
+      detailBooking.payment_correction_expires_at,
+    hold_expires_at: paymentSource.hold_expires_at || detailBooking.hold_expires_at,
+    operator_visible: paymentSource.operator_visible ?? detailBooking.operator_visible,
+    operator_can_act: paymentSource.operator_can_act ?? detailBooking.operator_can_act,
+    workflow_bucket: paymentSource.workflow_bucket || detailBooking.workflow_bucket,
+  };
+};
+
 export const checkUserExistence = async (phoneNumber) => {
   try {
     const response = await requestWithFallback({
@@ -190,38 +251,30 @@ export const updateCompanyStatus = async (
   }
 };
 
-export const fetchApprovedCompanies = async () => {
-  try {
-    const response = await requestWithFallback({
-      method: "get",
-      url: "/management/fetch_all_approved_companies/",
-    });
-    return {
-      status: response.status,
-      data: response.data,
-    };
-  } catch (error) {
-    if (error.response) {
-      return {
-        status: error.response.status,
-        error: error.response.data.message,
-      };
-    } else {
-      console.error("Error fetching approved companies:", error);
-      throw error;
-    }
-  }
-};
-
-export const fetchPaidBookings = async () => {
+export const fetchPaidBookings = async (
+  {
+    page = 1,
+    pageSize = 10,
+    paymentQueue = "",
+    orderDate = "",
+    bookingNumber = "",
+  } = {}
+) => {
   try {
     const response = await requestWithFallback({
       method: "get",
       url: "/management/fetch_all_paid_bookings/",
+      params: {
+        page,
+        page_size: pageSize,
+        ...(paymentQueue ? { payment_queue: paymentQueue } : {}),
+        ...(orderDate ? { order_date: orderDate } : {}),
+        ...(bookingNumber ? { booking_number: bookingNumber } : {}),
+      },
     });
     return {
       status: response.status,
-      data: response.data,
+      data: normalizePaginatedResponse(response.data),
     };
   } catch (error) {
     if (error.response) {
@@ -293,13 +346,22 @@ export const confirmBookingPayment = async (
 };
 
 // Define the function to fetch all pending partner payments
-export const fetchPendingPartnerPayments = async () => {
+export const fetchPendingPartnerPayments = async (
+  {
+    page = 1,
+    pageSize = 10,
+  } = {}
+) => {
   try {
     const response = await requestWithFallback({
       method: "get",
       url: "/management/fetch_all_partner_receive_able_payments_details/",
+      params: {
+        page,
+        page_size: pageSize,
+      },
     });
-    return { status: response.status, data: response.data };
+    return { status: response.status, data: normalizePaginatedResponse(response.data) };
   } catch (error) {
     return { status: error.response?.status, error: error.message };
   }
@@ -319,6 +381,48 @@ export const fetchBookingDetails = async (partner_session_token, booking_number)
     return { status: response.status, data: response.data };
   } catch (error) {
     console.error('Error fetching booking details:', error);
+    return { status: error.response?.status, error: error.message };
+  }
+};
+
+export const fetchSettlementReviewBookingDetails = async (
+  partner_session_token,
+  booking_number
+) => {
+  try {
+    const detailResponse = await requestWithFallback({
+      method: "get",
+      url: "/bookings/get_booking_detail_by_booking_number/",
+      params: {
+        partner_session_token,
+        booking_number,
+      },
+    });
+
+    let paidBookingMatches = [];
+    try {
+      const paidBookingsResponse = await fetchPaidBookings({
+        bookingNumber: booking_number,
+        page: 1,
+        pageSize: 1,
+      });
+      paidBookingMatches = paidBookingsResponse.data?.results || [];
+    } catch (paymentSourceError) {
+      console.error(
+        "Error fetching payment proof source for settlement review:",
+        paymentSourceError
+      );
+    }
+
+    const paymentSource =
+      paidBookingMatches.find((booking) => booking.booking_number === booking_number) || {};
+
+    return {
+      status: detailResponse.status,
+      data: mergeSettlementReviewBookingDetail(detailResponse.data, paymentSource),
+    };
+  } catch (error) {
+    console.error("Error fetching settlement review booking details:", error);
     return { status: error.response?.status, error: error.message };
   }
 };

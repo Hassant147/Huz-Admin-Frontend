@@ -15,11 +15,11 @@ const BookingProvider = ({ children }) => {
 
   const fetchBookingDetails = useCallback(async (bookingNumber) => {
     setLoading(true);
+    setError(null);
     try {
       const data = await getBookingDetails(partner_session_token, bookingNumber);
       setBooking(data);
       setBookingStatus(data.booking_status);
-      localStorage.setItem('booking', JSON.stringify(data));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -29,11 +29,11 @@ const BookingProvider = ({ children }) => {
 
   const refreshBookingDetails = useCallback(async (bookingNumber) => {
     setDeletingDocument(true);
+    setError(null);
     try {
       const data = await getBookingDetails(partner_session_token, bookingNumber);
       setBooking(data); // Update the entire booking state to ensure re-render
       setBookingStatus(data.booking_status);
-      localStorage.setItem('booking', JSON.stringify(data));
     } catch (err) {
       setError(err.message);
     } finally {

@@ -1,27 +1,32 @@
-import React, { useContext, useEffect } from 'react';
+import React from 'react';
 import { useLocation } from 'react-router-dom';
 import AdminPanelLayout from "../../../../../../components/layout/AdminPanelLayout";
 import Sidebar from '../../components/Sidebar';
-import { BookingContext } from '../../../../../../context/BookingContext';
 import UploadAirline from "./UploadAirline";
+import useAdminBookingLoader from '../../useAdminBookingLoader';
+import { canManageFulfillmentDetails } from '../../../bookingWorkflowUtils';
+import FulfillmentEditUnavailable from '../../components/FulfillmentEditUnavailable';
 
 const AirlineTickets = () => {
-  const { booking, setBooking, fetchBookingDetails } = useContext(BookingContext);
+  const { booking, loading } = useAdminBookingLoader();
   const location = useLocation();
-  const isEditing = location.state ? location.state.isEditing : false;
-  const bookingNumber = localStorage.getItem('bookingNumber'); // Retrieve booking number from local storage
+  const isEditing = Boolean(location.state?.isEditing);
 
-  useEffect(() => {
-    // Try to get booking data from local storage
-    const storedBooking = localStorage.getItem('booking');
-    
-    if (storedBooking) {
-      const parsedBooking = JSON.parse(storedBooking);
-      setBooking(parsedBooking);
-    } else if (bookingNumber) {
-      fetchBookingDetails(bookingNumber);
-    }
-  }, [bookingNumber, fetchBookingDetails, setBooking]);
+  if (loading || !booking) {
+    return <div>Loading booking details...</div>;
+  }
+
+  if (!canManageFulfillmentDetails(booking)) {
+    return (
+      <AdminPanelLayout
+        title="Booking Detail"
+        subtitle="Manage and upload airline ticket documents for this booking."
+        mainClassName="py-5 bg-[#f6f6f6]"
+      >
+        <FulfillmentEditUnavailable booking={booking} />
+      </AdminPanelLayout>
+    );
+  }
 
   return (
     <AdminPanelLayout

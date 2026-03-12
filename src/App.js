@@ -1,5 +1,5 @@
 import React, { Suspense, createContext, lazy, useState } from "react";
-import { BrowserRouter as Router, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./App.css";
@@ -11,11 +11,15 @@ import { RouteLoader } from "./components/ui";
 import { UserProvider } from "./context/UserContext";
 import { BookingProvider } from "./context/BookingContext";
 import { CurrencyProvider } from "./utility/CurrencyContext";
+import {
+  buildAdminBookingDetailsPath,
+  buildAdminBookingSubflowPath,
+  parseAdminBookingNumberFromSearch,
+} from "./pages/Admin-Panel/Bookings/bookingRouteUtils";
 
 const LoginPage = lazy(() => import("./pages/login/login"));
 
 const SuperAdminDashboard = lazy(() => import("./pages/dashboard/dashboard"));
-const AccessProfilePage = lazy(() => import("./pages/dashboard/dashboard-pages/AccessProfilePage"));
 const PendingProfilePage = lazy(() => import("./pages/dashboard/dashboard-pages/PendingProfilePages/PendingProfilesList"));
 const ApproveAmountsPage = lazy(() => import("./pages/dashboard/dashboard-pages/ApproveAmountsPages/ApproveAmountsPage"));
 const ProfileApprovalPage = lazy(() => import("./pages/dashboard/dashboard-pages/PendingProfilePages/ProfileApprovalDetailPage"));
@@ -78,6 +82,51 @@ const getUserStatus = () => {
 
 const isSuperAdminLoggedIn = () => Boolean(localStorage.getItem("isSuperAdmin"));
 
+const resolveLegacyBookingNumber = (location) =>
+  location?.state?.bookingNumber || parseAdminBookingNumberFromSearch(location?.search);
+
+const LegacyBookingDetailsRedirect = () => {
+  const location = useLocation();
+  const bookingNumber = resolveLegacyBookingNumber(location);
+
+  return (
+    <Navigate
+      to={buildAdminBookingDetailsPath(bookingNumber)}
+      replace
+      state={location.state}
+    />
+  );
+};
+
+const LegacyBookingSubflowRedirect = ({ flow }) => {
+  const location = useLocation();
+  const bookingNumber = resolveLegacyBookingNumber(location);
+
+  return (
+    <Navigate
+      to={buildAdminBookingSubflowPath(bookingNumber, flow)}
+      replace
+      state={location.state}
+    />
+  );
+};
+
+const LegacyUploadEvisaRedirect = () => (
+  <LegacyBookingSubflowRedirect flow="upload-evisa" />
+);
+
+const LegacyAirlineTicketsRedirect = () => (
+  <LegacyBookingSubflowRedirect flow="airline-tickets" />
+);
+
+const LegacyTransportArrangementRedirect = () => (
+  <LegacyBookingSubflowRedirect flow="transport-arrangement" />
+);
+
+const LegacyHotelArrangementRedirect = () => (
+  <LegacyBookingSubflowRedirect flow="hotel-arrangement" />
+);
+
 const SuperAdminProtectedRoute = ({ element }) => {
   if (isSuperAdminLoggedIn()) {
     return element;
@@ -90,7 +139,7 @@ const PartnerPanelProtectedRoute = ({ element }) => {
   const { isLoggedIn, isEmailVerified, partnerType, accountStatus } = getUserStatus();
 
   if (isSuperAdminLoggedIn()) {
-    return element;
+    return <Navigate to="/super-admin-dashboard" replace />;
   }
 
   if (isLoggedIn && isEmailVerified && partnerType !== "NA" && accountStatus === "Active") {
@@ -110,13 +159,6 @@ const SUPER_ADMIN_ROUTES = [
     title: "Dashboard",
     subtitle: "Welcome to the dashboard. Manage your content here.",
     Component: SuperAdminDashboard,
-    showPageBanner: true,
-  },
-  {
-    path: "/access-profile",
-    title: "Access Profile",
-    subtitle: "Manage and access user profiles here.",
-    Component: AccessProfilePage,
     showPageBanner: true,
   },
   {
@@ -189,13 +231,18 @@ const PARTNER_ROUTES = [
   { path: "/company/continue-existing-package-creation", Component: ContinueCreatedCompanyForms },
   { path: "/profile", Component: Profile },
   { path: "/booking", Component: Bookings },
-  { path: "/bookingdetails", Component: BookingDetails },
+  { path: "/booking/:bookingNumber", Component: BookingDetails },
+  { path: "/bookingdetails", Component: LegacyBookingDetailsRedirect },
   { path: "/wallet", Component: Wallet },
   { path: "/all-payments", Component: AllPayments },
-  { path: "/package/upload-evisa", Component: UploadEvisa },
-  { path: "/package/airline-tickets", Component: AirlineTickets },
-  { path: "/package/transport-arrangement", Component: TransportArrangement },
-  { path: "/package/hotel-arrangement", Component: HotelArrangement },
+  { path: "/booking/:bookingNumber/upload-evisa", Component: UploadEvisa },
+  { path: "/booking/:bookingNumber/airline-tickets", Component: AirlineTickets },
+  { path: "/booking/:bookingNumber/transport-arrangement", Component: TransportArrangement },
+  { path: "/booking/:bookingNumber/hotel-arrangement", Component: HotelArrangement },
+  { path: "/package/upload-evisa", Component: LegacyUploadEvisaRedirect },
+  { path: "/package/airline-tickets", Component: LegacyAirlineTicketsRedirect },
+  { path: "/package/transport-arrangement", Component: LegacyTransportArrangementRedirect },
+  { path: "/package/hotel-arrangement", Component: LegacyHotelArrangementRedirect },
   { path: "/reviews-ratings", Component: Reviews },
   { path: "/withdrawhistory", Component: WithdrawHistory },
   { path: "/accountstatementhistory", Component: AccountStatementHistory },
@@ -229,6 +276,15 @@ const App = () => {
                               <LoginPage />
                             </HeaderNavbarCom>
                           }
+                        />
+                      }
+                    />
+
+                    <Route
+                      path="/access-profile"
+                      element={
+                        <SuperAdminProtectedRoute
+                          element={<Navigate to="/super-admin-dashboard" replace />}
                         />
                       }
                     />

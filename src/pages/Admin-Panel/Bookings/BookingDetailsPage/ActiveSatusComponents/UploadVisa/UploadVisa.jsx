@@ -4,7 +4,7 @@ import trashIcon from "../../../../../../assets/trashIcon.svg";
 import logo from "../../../../../../assets/upload.svg";
 import { BiErrorAlt } from "react-icons/bi";
 import { useNavigate } from "react-router-dom";
-import { updateBookingDocumentStatus, deleteBookingDocument, getBookingDetails } from '../../../../../../utility/Api';
+import { updateBookingDocumentStatus, deleteBookingDocument } from '../../../../../../utility/Api';
 import toast, { Toaster } from 'react-hot-toast';
 import { ClipLoader } from 'react-spinners';
 
@@ -108,13 +108,14 @@ const UploadVisa = ({ isEditing, booking }) => {
             partner_session_token: booking.partner_session_token,
           };
           await deleteBookingDocument(props);
+          setSelectedFiles(prevFiles => prevFiles.filter(file => file.file !== fileToDelete.file));
           toast.success('eVisa deleted successfully!');
-          const updatedBooking = await getBookingDetails(booking.partner_session_token, booking.booking_number);
-          // Assuming setBooking is available here if needed
         } catch (error) {
           console.error('Failed to delete eVisa:', error);
           toast.error('Failed to delete eVisa.');
+          return;
         }
+        return;
       }
     }
     setSelectedFiles(prevFiles => prevFiles.filter(file => file.file !== fileToDelete.file));

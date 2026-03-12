@@ -47,6 +47,28 @@ const BookingInfo = ({ booking }) => {
             label="Travel Window"
             value={`${formatDate(booking.start_date)} to ${formatDate(booking.end_date)}`}
           />
+          <InfoTile
+            label="Remaining Due"
+            value={
+              <NumericFormat
+                value={Number(booking?.remaining_amount_due || 0)}
+                displayType="text"
+                thousandSeparator
+                prefix={`${selectedCurrency} `}
+                decimalScale={2}
+                fixedDecimalScale
+                className="font-semibold text-brand-600"
+              />
+            }
+          />
+          <InfoTile
+            label="Client Can Edit Travellers"
+            value={booking?.client_can_edit_travellers ? "Yes" : "No"}
+          />
+          <InfoTile
+            label="Operator Visibility"
+            value={booking?.operator_visible ? "Visible" : "Hidden"}
+          />
         </div>
 
         <div>

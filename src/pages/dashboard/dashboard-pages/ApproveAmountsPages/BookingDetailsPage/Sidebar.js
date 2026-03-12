@@ -6,8 +6,13 @@ import user from "../../../../../assets/booking/user.svg";
 import { AppCard, AppSectionHeader } from "../../../../../components/ui";
 import {
   getStatusPillClassName,
+  formatDateTime,
   withFallback,
 } from "./bookingDetailsUtils";
+import {
+  getPaymentStatusLabel,
+  getWorkflowSummaryLabel,
+} from "../bookingReviewUtils";
 
 const Sidebar = ({ booking }) => {
   if (!booking) {
@@ -43,10 +48,12 @@ const Sidebar = ({ booking }) => {
         <div className="flex flex-col items-center gap-3">
           <div
             className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusPillClassName(
-              booking_status
+              booking?.issue_status && booking.issue_status !== "NONE"
+                ? booking.issue_status
+                : booking_status
             )}`}
           >
-            {withFallback(booking_status, "Pending")}
+            {withFallback(getWorkflowSummaryLabel(booking), "Pending")}
           </div>
           <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100">
             {companyLogo ? (
@@ -76,6 +83,26 @@ const Sidebar = ({ booking }) => {
             className="!items-start"
           />
           <DetailRow icon={location} text={withFallback(formattedAddress)} />
+        </section>
+
+        <section className="space-y-3">
+          <AppSectionHeader
+            title="Workflow"
+            subtitle="Lifecycle, payment stage, and operator readiness"
+            className="!items-start"
+          />
+          <DetailRow icon={user} text={`Minimum: ${getPaymentStatusLabel(booking?.minimum_payment_status)}`} />
+          <DetailRow icon={user} text={`Full: ${getPaymentStatusLabel(booking?.full_payment_status)}`} />
+          <DetailRow icon={user} text={`Operator visible: ${booking?.operator_visible ? "Yes" : "No"}`} />
+          <DetailRow icon={user} text={`Operator can act: ${booking?.operator_can_act ? "Yes" : "No"}`} />
+          <DetailRow
+            icon={user}
+            text={`Correction deadline: ${withFallback(formatDateTime(booking?.payment_correction_expires_at), "Not active")}`}
+          />
+          <DetailRow
+            icon={user}
+            text={`Hold expires: ${withFallback(formatDateTime(booking?.hold_expires_at), "Not active")}`}
+          />
         </section>
       </div>
     </AppCard>

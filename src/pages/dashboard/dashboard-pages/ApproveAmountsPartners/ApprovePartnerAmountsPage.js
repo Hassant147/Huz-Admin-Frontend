@@ -7,7 +7,6 @@ import SuperAdminModuleShell from "../../components/SuperAdminModuleShell";
 import SuperAdminPagination from "../../components/SuperAdminPagination";
 import SuperAdminMetricCard from "../../components/SuperAdminMetricCard";
 import SuperAdminInfoTile from "../../components/SuperAdminInfoTile";
-import usePaginatedRecords from "../../components/usePaginatedRecords";
 import Loader from "../../../../components/loader";
 import {
   formatCurrencyPKR,
@@ -19,48 +18,76 @@ const ITEMS_PER_PAGE = 6;
 
 const ApprovePartnerAmountsPage = () => {
   const [bookings, setBookings] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalReceivable, setTotalReceivable] = useState(0);
+  const [totalPending, setTotalPending] = useState(0);
+  const [totalProcessed, setTotalProcessed] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const navigate = useNavigate();
-
-  const { currentPage, totalPages, currentItems, onPageChange } = usePaginatedRecords(
-    bookings,
-    ITEMS_PER_PAGE
-  );
 
   const loadPartnerPayments = useCallback(async () => {
     setLoading(true);
     setError("");
 
-    const { status, data, error: requestError } = await fetchPendingPartnerPayments();
+    const { status, data, error: requestError } = await fetchPendingPartnerPayments({
+      page: currentPage,
+      pageSize: ITEMS_PER_PAGE,
+    });
 
-    if (status === 200 && Array.isArray(data)) {
-      setBookings(data);
+    if (status === 200 && data) {
+      const paginatedResults = Array.isArray(data.results) ? data.results : [];
+      const meta = data.meta || {};
+      const fallbackTotals = paginatedResults.reduce(
+        (accumulator, booking) => ({
+          totalReceivable:
+            accumulator.totalReceivable + Number(booking.receivable_amount || 0),
+          totalPending: accumulator.totalPending + Number(booking.pending_amount || 0),
+          totalProcessed: accumulator.totalProcessed + Number(booking.processed_amount || 0),
+        }),
+        {
+          totalReceivable: 0,
+          totalPending: 0,
+          totalProcessed: 0,
+        }
+      );
+      setBookings(paginatedResults);
+      setTotalCount(Number(data.count) || 0);
+      setTotalReceivable(Number(meta.total_receivable) || fallbackTotals.totalReceivable);
+      setTotalPending(Number(meta.total_pending) || fallbackTotals.totalPending);
+      setTotalProcessed(Number(meta.total_processed) || fallbackTotals.totalProcessed);
     } else if (status === 404) {
       setBookings([]);
+      setTotalCount(0);
+      setTotalReceivable(0);
+      setTotalPending(0);
+      setTotalProcessed(0);
     } else {
       setBookings([]);
+      setTotalCount(0);
+      setTotalReceivable(0);
+      setTotalPending(0);
+      setTotalProcessed(0);
       setError(requestError || "An error occurred while fetching data.");
     }
 
     setLoading(false);
-  }, []);
+  }, [currentPage]);
 
   useEffect(() => {
     loadPartnerPayments();
   }, [loadPartnerPayments]);
 
-  const totalReceivable = useMemo(() => {
-    return bookings.reduce((sum, booking) => sum + Number(booking.receivable_amount || 0), 0);
-  }, [bookings]);
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(totalCount / ITEMS_PER_PAGE));
+  }, [totalCount]);
 
-  const totalPending = useMemo(() => {
-    return bookings.reduce((sum, booking) => sum + Number(booking.pending_amount || 0), 0);
-  }, [bookings]);
-
-  const totalProcessed = useMemo(() => {
-    return bookings.reduce((sum, booking) => sum + Number(booking.processed_amount || 0), 0);
-  }, [bookings]);
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   return (
     <SuperAdminModuleShell
@@ -85,12 +112,12 @@ const ApprovePartnerAmountsPage = () => {
             }
           />
         </AppCard>
-      ) : bookings.length > 0 ? (
+      ) : totalCount > 0 ? (
         <>
           <div className="app-grid-3">
             <SuperAdminMetricCard
               title="Requests"
-              value={bookings.length.toLocaleString()}
+              value={totalCount.toLocaleString()}
               hint="Partner transfer records"
             />
             <SuperAdminMetricCard
@@ -101,19 +128,19 @@ const ApprovePartnerAmountsPage = () => {
             <SuperAdminMetricCard
               title="Processed Amount"
               value={formatCurrencyPKR(totalProcessed)}
-              hint={`${currentItems.length} records on current page`}
+              hint={`${bookings.length} records on current page`}
             />
           </div>
 
           <AppCard className="border-slate-200">
             <AppSectionHeader
               title="Partner Receivable Requests"
-              subtitle={`Showing ${currentItems.length} of ${bookings.length} records`}
+              subtitle={`Showing ${bookings.length} of ${totalCount} records`}
             />
           </AppCard>
 
           <div className="app-content-stack">
-            {currentItems.map((booking) => (
+            {bookings.map((booking) => (
               <AppCard
                 key={`${booking.partner_session_token}-${booking.booking_number}`}
                 className="border-slate-200"
@@ -162,7 +189,7 @@ const ApprovePartnerAmountsPage = () => {
           <SuperAdminPagination
             currentPage={currentPage}
             totalPages={totalPages}
-            onPageChange={onPageChange}
+            onPageChange={setCurrentPage}
           />
         </>
       ) : (
@@ -179,4 +206,3 @@ const ApprovePartnerAmountsPage = () => {
 };
 
 export default ApprovePartnerAmountsPage;
-
