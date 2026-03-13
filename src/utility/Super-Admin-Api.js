@@ -1,4 +1,9 @@
 import axios from "axios";
+import {
+  buildSharedRequestKey,
+  invalidateSharedRequest,
+  runSharedRequest,
+} from "./requestCache";
 
 const authHeader = `${process.env.REACT_APP_AUTH_TOKEN}`;
 const LOCAL_FALLBACK_API_URL = "http://127.0.0.1:8000";
@@ -105,6 +110,45 @@ const normalizePaginatedResponse = (payload) => {
   }
 
   return EMPTY_PAGINATED_RESPONSE;
+};
+
+const REQUEST_CACHE_TTL_MS = 1500;
+const PAID_BOOKINGS_REQUEST_PREFIX = buildSharedRequestKey(
+  "super-admin",
+  "paid-bookings"
+);
+const PARTNER_RECEIVABLES_REQUEST_PREFIX = buildSharedRequestKey(
+  "super-admin",
+  "partner-receivables"
+);
+
+const getPaidBookingsRequestKey = ({
+  page = 1,
+  pageSize = 10,
+  paymentQueue = "",
+  orderDate = "",
+  bookingNumber = "",
+} = {}) =>
+  buildSharedRequestKey(
+    PAID_BOOKINGS_REQUEST_PREFIX,
+    page,
+    pageSize,
+    paymentQueue,
+    orderDate,
+    bookingNumber
+  );
+
+const getPartnerReceivablesRequestKey = ({
+  page = 1,
+  pageSize = 10,
+} = {}) =>
+  buildSharedRequestKey(PARTNER_RECEIVABLES_REQUEST_PREFIX, page, pageSize);
+
+const invalidateManagementListRequests = () => {
+  invalidateSharedRequest([
+    PAID_BOOKINGS_REQUEST_PREFIX,
+    PARTNER_RECEIVABLES_REQUEST_PREFIX,
+  ]);
 };
 
 const mergeSettlementReviewBookingDetail = (detailBooking = {}, paymentSource = {}) => {
@@ -258,41 +302,55 @@ export const fetchPaidBookings = async (
     paymentQueue = "",
     orderDate = "",
     bookingNumber = "",
-  } = {}
+  } = {},
+  options = {}
 ) => {
-  try {
-    const response = await requestWithFallback({
-      method: "get",
-      url: "/management/fetch_all_paid_bookings/",
-      params: {
-        page,
-        page_size: pageSize,
-        ...(paymentQueue ? { payment_queue: paymentQueue } : {}),
-        ...(orderDate ? { order_date: orderDate } : {}),
-        ...(bookingNumber ? { booking_number: bookingNumber } : {}),
-      },
-    });
-    return {
-      status: response.status,
-      data: normalizePaginatedResponse(response.data),
-    };
-  } catch (error) {
-    if (error.response) {
-      return {
-        status: error.response.status,
-        error:
-          error.response.data?.message ||
-          error.response.data?.detail ||
-          "Failed to fetch paid bookings.",
-      };
-    } else {
-      console.error("Error fetching paid bookings:", error);
-      return {
-        status: 0,
-        error: `Unable to connect to API (${baseURL}). Check backend server, ngrok tunnel, and CORS.`,
-      };
-    }
-  }
+  return runSharedRequest({
+    key: getPaidBookingsRequestKey({
+      page,
+      pageSize,
+      paymentQueue,
+      orderDate,
+      bookingNumber,
+    }),
+    cacheTtlMs: REQUEST_CACHE_TTL_MS,
+    skipCache: Boolean(options.forceRefresh),
+    request: async () => {
+      try {
+        const response = await requestWithFallback({
+          method: "get",
+          url: "/management/fetch_all_paid_bookings/",
+          params: {
+            page,
+            page_size: pageSize,
+            ...(paymentQueue ? { payment_queue: paymentQueue } : {}),
+            ...(orderDate ? { order_date: orderDate } : {}),
+            ...(bookingNumber ? { booking_number: bookingNumber } : {}),
+          },
+        });
+        return {
+          status: response.status,
+          data: normalizePaginatedResponse(response.data),
+        };
+      } catch (error) {
+        if (error.response) {
+          return {
+            status: error.response.status,
+            error:
+              error.response.data?.message ||
+              error.response.data?.detail ||
+              "Failed to fetch paid bookings.",
+          };
+        }
+
+        console.error("Error fetching paid bookings:", error);
+        return {
+          status: 0,
+          error: `Unable to connect to API (${baseURL}). Check backend server, ngrok tunnel, and CORS.`,
+        };
+      }
+    },
+  });
 };
 
 // API to confirm payment and update booking status
@@ -342,6 +400,8 @@ export const confirmBookingPayment = async (
         error: "An error occurred while making the request.",
       };
     }
+  } finally {
+    invalidateManagementListRequests();
   }
 };
 
@@ -350,21 +410,32 @@ export const fetchPendingPartnerPayments = async (
   {
     page = 1,
     pageSize = 10,
-  } = {}
+  } = {},
+  options = {}
 ) => {
-  try {
-    const response = await requestWithFallback({
-      method: "get",
-      url: "/management/fetch_all_partner_receive_able_payments_details/",
-      params: {
-        page,
-        page_size: pageSize,
-      },
-    });
-    return { status: response.status, data: normalizePaginatedResponse(response.data) };
-  } catch (error) {
-    return { status: error.response?.status, error: error.message };
-  }
+  return runSharedRequest({
+    key: getPartnerReceivablesRequestKey({ page, pageSize }),
+    cacheTtlMs: REQUEST_CACHE_TTL_MS,
+    skipCache: Boolean(options.forceRefresh),
+    request: async () => {
+      try {
+        const response = await requestWithFallback({
+          method: "get",
+          url: "/management/fetch_all_partner_receive_able_payments_details/",
+          params: {
+            page,
+            page_size: pageSize,
+          },
+        });
+        return {
+          status: response.status,
+          data: normalizePaginatedResponse(response.data),
+        };
+      } catch (error) {
+        return { status: error.response?.status, error: error.message };
+      }
+    },
+  });
 };
 
 // Define the function to fetch booking details
@@ -442,6 +513,8 @@ export const updatePartnerPaymentStatus = async (partner_session_token, booking_
   } catch (error) {
     console.error('Error updating payment status:', error);
     return { status: error.response?.status, error: error.message };
+  } finally {
+    invalidateManagementListRequests();
   }
 };
 
