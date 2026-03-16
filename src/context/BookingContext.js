@@ -1,5 +1,6 @@
 import React, { createContext, useState, useCallback } from 'react';
 import { getBookingDetails } from '../utility/Api';
+import { adaptAdminBooking } from '../utility/bookingContractUtils';
 
 const BookingContext = createContext();
 
@@ -18,8 +19,9 @@ const BookingProvider = ({ children }) => {
     setError(null);
     try {
       const data = await getBookingDetails(partner_session_token, bookingNumber);
-      setBooking(data);
-      setBookingStatus(data.booking_status);
+      const adaptedBooking = adaptAdminBooking(data);
+      setBooking(adaptedBooking);
+      setBookingStatus(adaptedBooking.booking_status);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -32,8 +34,9 @@ const BookingProvider = ({ children }) => {
     setError(null);
     try {
       const data = await getBookingDetails(partner_session_token, bookingNumber);
-      setBooking(data); // Update the entire booking state to ensure re-render
-      setBookingStatus(data.booking_status);
+      const adaptedBooking = adaptAdminBooking(data);
+      setBooking(adaptedBooking);
+      setBookingStatus(adaptedBooking.booking_status);
     } catch (err) {
       setError(err.message);
     } finally {

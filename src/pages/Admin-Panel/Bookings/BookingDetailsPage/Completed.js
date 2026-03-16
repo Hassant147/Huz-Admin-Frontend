@@ -10,7 +10,6 @@ import { canManageFulfillmentDetails } from '../bookingWorkflowUtils';
 
 const Completed = () => {
   const { booking, refreshBookingDetails } = useContext(BookingContext);
-  const { transport_details = [], hotel_details = [] } = booking || {};
   const canManageDetails = canManageFulfillmentDetails(booking);
 
   const handleDelete = async (documentId, type) => {
@@ -55,14 +54,8 @@ const Completed = () => {
             : undefined
         }
       />
-      <TransportDetails
-        details={transport_details}
-        canManage={canManageDetails}
-      />
-      <HotelDetails
-        details={hotel_details}
-        canManage={canManageDetails}
-      />
+      <TransportDetails booking={booking} canManage={canManageDetails} />
+      <HotelDetails booking={booking} canManage={canManageDetails} />
     </div>
   );
 };

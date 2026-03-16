@@ -1,275 +1,213 @@
-import React, { useState, useEffect, useContext } from "react";
-import PhoneInput from "react-phone-input-2";
-import "react-phone-input-2/lib/style.css";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { postTransportDetails, updateTransportDetails } from '../../../../../../utility/Api';
-import toast, { Toaster } from 'react-hot-toast';
-import { ClipLoader } from 'react-spinners';
+import toast, { Toaster } from "react-hot-toast";
+import { ClipLoader } from "react-spinners";
+import {
+  postTransportDetails,
+  updateTransportDetails,
+} from "../../../../../../utility/Api";
+
+const buildInitialHotelItems = (booking) => {
+  const cards = Array.isArray(booking?.hotel_cards) ? booking.hotel_cards : [];
+  if (cards.length > 0) {
+    return cards.map((card) => ({
+      city: card.cityKey || card.cityLabel,
+      package_hotel_id: card.packageHotel?.id || "",
+      hotel_name: card.confirmed?.hotelName || "",
+      contact_name: card.confirmed?.contactName || "",
+      contact_phone: card.confirmed?.contactPhone || "",
+      note: card.confirmed?.note || "",
+      packageSummary: {
+        hotelName: card.packageHotel?.hotelName || "",
+        rating: card.packageHotel?.rating || "",
+        distance: card.packageHotel?.distance || "",
+      },
+      cityLabel: card.cityLabel || card.cityKey || "Hotel",
+    }));
+  }
+
+  return [
+    {
+      city: "makkah",
+      package_hotel_id: "",
+      hotel_name: "",
+      contact_name: "",
+      contact_phone: "",
+      note: "",
+      packageSummary: {
+        hotelName: "",
+        rating: "",
+        distance: "",
+      },
+      cityLabel: "Makkah",
+    },
+  ];
+};
+
+const hasHotelSharedDetails = (item = {}) =>
+  [item.hotel_name, item.contact_name, item.contact_phone, item.note].some((value) =>
+    String(value || "").trim()
+  );
 
 const HotelArrangementForm = ({ isEditing, booking }) => {
-    const [formData, setFormData] = useState({
-        jeddahContactName: "",
-        jeddahContact: "",
-        makkahContact1Name: "",
-        makkahContact1: "",
-        makkahContact2Name: "",
-        makkahContact2: "",
-        makkahNote: "",
-        madinahNote: "",
-        hotelOrTransportId: null,
-    });
-    const [errors, setErrors] = useState({});
-    const [loading, setLoading] = useState(false);
-    const navigate = useNavigate();
+  const [hotelItems, setHotelItems] = useState(() => buildInitialHotelItems(booking));
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        if (isEditing && booking) {
-            const hotelDetails = booking.booking_hotel_and_transport_details.find(
-                (detail) => detail.detail_for === "Hotel"
-            );
+  useEffect(() => {
+    setHotelItems(buildInitialHotelItems(booking));
+  }, [booking]);
 
-            if (hotelDetails) {
-                setFormData({
-                    hotelOrTransportId: hotelDetails.hotel_or_transport_id,
-                    jeddahContactName: hotelDetails.jeddah_name || "",
-                    jeddahContact: hotelDetails.jeddah_number || "",
-                    makkahContact1Name: hotelDetails.mecca_name || "",
-                    makkahContact1: hotelDetails.mecca_number || "",
-                    makkahContact2Name: hotelDetails.madinah_name || "",
-                    makkahContact2: hotelDetails.madinah_number || "",
-                    makkahNote: hotelDetails.comment_1 || "",
-                    madinahNote: hotelDetails.comment_2 || "",
-                });
+  const updateItemField = (index, field, value) => {
+    setHotelItems((currentItems) =>
+      currentItems.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              [field]: value,
             }
-        }
-    }, [isEditing, booking]);
-
-    const validateField = (fieldName, value) => {
-        let error = null;
-        if (!value) {
-            error = `${fieldName.replace(/([A-Z])/g, ' $1')} is required`;
-        }
-        setErrors((prevErrors) => ({
-            ...prevErrors,
-            [fieldName]: error
-        }));
-    };
-
-    const handleInputChange = (fieldName, value) => {
-        setFormData((prevFormData) => ({
-            ...prevFormData,
-            [fieldName]: value
-        }));
-        validateField(fieldName, value);
-    };
-
-    const handlePhoneNumberChange = (value, fieldName) => {
-        if (value && value.replace(/[^0-9]/g, '').length > 13) {
-            return; // Prevent further input if more than 13 digits
-        }
-        handleInputChange(fieldName, value);
-    };
-
-    const validateAllFields = () => {
-        const requiredFields = [
-            'jeddahContactName', 'jeddahContact', 'makkahContact1Name', 'makkahContact1', 'makkahContact2Name', 'makkahContact2', 'makkahNote', 'madinahNote'
-        ];
-
-        const newErrors = {};
-        requiredFields.forEach(field => {
-            if (!formData[field]) {
-                newErrors[field] = `${field.replace(/([A-Z])/g, ' $1')} is required`;
-            }
-        });
-
-        setErrors(newErrors);
-
-        // Return true if there are no errors
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-
-        if (!validateAllFields()) {
-            return;
-        }
-
-        setLoading(true);
-
-        const apiData = {
-            partner_session_token: booking.partner_session_token,
-            booking_number: booking.booking_number,
-            detail_for: "Hotel",
-            jeddah_name: formData.jeddahContactName,
-            jeddah_number: formData.jeddahContact,
-            mecca_name: formData.makkahContact1Name,
-            mecca_number: formData.makkahContact1,
-            madinah_name: formData.makkahContact2Name,
-            madinah_number: formData.makkahContact2,
-            comment_1: formData.makkahNote,
-            comment_2: formData.madinahNote,
-        };
-
-        try {
-            if (isEditing) {
-                apiData.hotel_or_transport_id = formData.hotelOrTransportId; // Add the ID for editing
-                await updateTransportDetails(apiData);
-                toast.success("Hotel arrangement updated successfully!");
-            } else {
-                await postTransportDetails(apiData);
-                toast.success("Hotel arrangement submitted successfully!");
-            }
-
-            navigate(-1);
-        } catch (error) {
-            console.error("Failed to submit form:", error);
-            toast.error("Failed to submit form. Please try again.");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div>
-            <Toaster position="top-right" />
-            <form onSubmit={handleSubmit} className=" w-full mx-auto">
-                <div className="p-6 rounded bg-white border-[1px]">
-                    <h1 className="text-gray-600 text-normal text-lg mb-4">
-                        Update hotel arrangement for customer
-                    </h1>
-                    <span className="text-sm text-gray-500 text-light">What are your transporter's contact details for Makkah?</span>
-                    <div className="space-y-4 mt-8">
-                        {/* Jeddah Contact Inputs */}
-                        <div className="lg:flex items-center gap-5">
-                            <div className="w-full lg:w-1/2">
-                                <h1 className="text-sm text-gray-500 text-light mb-1">
-                                    Contact Name (Jeddah)
-                                </h1>
-                                <input
-                                    type="text"
-                                    value={formData.jeddahContactName}
-                                    onChange={(e) => handleInputChange('jeddahContactName', e.target.value)}
-                                    onBlur={(e) => validateField('jeddahContactName', e.target.value)}
-                                    className="px-4 md:py-1.5 block rounded border-[2px] border-[#DEDDDD] w-full text-sm text-gray-600"
-                                />
-                                {errors.jeddahContactName && <p className="text-red-500 text-xs">{errors.jeddahContactName}</p>}
-                            </div>
-                            <div className="w-full lg:w-1/2">
-                                <h1 className="text-sm text-gray-500 text-light mb-1">
-                                    Contact Number (Jeddah)
-                                </h1>
-                                <PhoneInput
-                                    country={'pk'}
-                                    value={formData.jeddahContact}
-                                    onChange={(value) => handlePhoneNumberChange(value, 'jeddahContact')}
-                                    containerClass="form-input-container"
-                                    inputClass="form-input rounded w-full text-sm text-gray-600"
-                                />
-                                {errors.jeddahContact && <p className="text-red-500 text-xs">{errors.jeddahContact}</p>}
-                            </div>
-                        </div>
-                        {/* Makkah Contact 1 Inputs */}
-                        <div className="lg:flex items-center gap-5">
-                            <div className="w-full lg:w-1/2">
-                                <h1 className="text-sm text-gray-500 text-light mb-1">
-                                    Contact Name (Makkah)
-                                </h1>
-                                <input
-                                    type="text"
-                                    value={formData.makkahContact1Name}
-                                    onChange={(e) => handleInputChange('makkahContact1Name', e.target.value)}
-                                    onBlur={(e) => validateField('makkahContact1Name', e.target.value)}
-                                    className="px-4 md:py-1.5 block rounded border-[2px] border-[#DEDDDD] w-full text-sm text-gray-600"
-                                />
-                                {errors.makkahContact1Name && <p className="text-red-500 text-xs">{errors.makkahContact1Name}</p>}
-                            </div>
-                            <div className="w-full lg:w-1/2">
-                                <h1 className="text-sm text-gray-500 text-light mb-1">
-                                    Contact Number (Makkah)
-                                </h1>
-                                <PhoneInput
-                                    country={'pk'}
-                                    value={formData.makkahContact1}
-                                    onChange={(value) => handlePhoneNumberChange(value, 'makkahContact1')}
-                                    containerClass="form-input-container"
-                                    inputClass="form-input rounded w-full text-sm text-gray-600"
-                                />
-                                {errors.makkahContact1 && <p className="text-red-500 text-xs">{errors.makkahContact1}</p>}
-                            </div>
-                        </div>
-                        {/* Makkah Contact 2 Inputs */}
-                        <div className="lg:flex items-center gap-5">
-                            <div className="w-full lg:w-1/2">
-                                <h1 className="text-sm text-gray-500 text-light mb-1">
-                                    Contact Name (Madinah)
-                                </h1>
-                                <input
-                                    type="text"
-                                    value={formData.makkahContact2Name}
-                                    onChange={(e) => handleInputChange('makkahContact2Name', e.target.value)}
-                                    onBlur={(e) => validateField('makkahContact2Name', e.target.value)}
-                                    className="px-4 md:py-1.5 block rounded border-[2px] border-[#DEDDDD] w-full text-sm text-gray-600"
-                                />
-                                {errors.makkahContact2Name && <p className="text-red-500 text-xs">{errors.makkahContact2Name}</p>}
-                            </div>
-                            <div className="w-full lg:w-1/2">
-                                <h1 className="text-sm text-gray-500 text-light mb-1">
-                                    Contact Number (Madinah)
-                                </h1>
-                                <PhoneInput
-                                    country={'pk'}
-                                    value={formData.makkahContact2}
-                                    onChange={(value) => handlePhoneNumberChange(value, 'makkahContact2')}
-                                    containerClass="form-input-container"
-                                    inputClass="form-input rounded w-full text-sm text-gray-600"
-                                />
-                                {errors.makkahContact2 && <p className="text-red-500 text-xs">{errors.makkahContact2}</p>}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {/* Text Area for Notes */}
-                <div className="mt-4 bg-white border-[1px] p-6 rounded">
-                    <div className="mb-4">
-                        <label htmlFor="makkahNote" className="text-sm text-gray-500 text-light">
-                            Makkah Hotel Arrangement Note
-                        </label>
-                        <textarea
-                            id="makkahNote"
-                            className="w-full text-sm text-gray-600 mt-2 h-52 p-4 border border-gray-300 rounded-md resize-none"
-                            placeholder="Details about Makkah hotel arrangement"
-                            value={formData.makkahNote}
-                            onChange={(e) => handleInputChange('makkahNote', e.target.value)}
-                            onBlur={(e) => validateField('makkahNote', e.target.value)}
-                        />
-                        {errors.makkahNote && <p className="text-red-500 text-xs">{errors.makkahNote}</p>}
-                    </div>
-                    <div className="mb-4">
-                        <label htmlFor="madinahNote" className="text-sm text-gray-500 text-light">
-                            Madinah Hotel Arrangement Note
-                        </label>
-                        <textarea
-                            id="madinahNote"
-                            className="text-sm text-gray-600 w-full mt-2 h-52 p-4 border border-gray-300 rounded-md resize-none"
-                            placeholder="Details about Madinah hotel arrangement"
-                            value={formData.madinahNote}
-                            onChange={(e) => handleInputChange('madinahNote', e.target.value)}
-                            onBlur={(e) => validateField('madinahNote', e.target.value)}
-                        />
-                        {errors.madinahNote && <p className="text-red-500 text-xs">{errors.madinahNote}</p>}
-                    </div>
-                </div>
-                <button
-                    type="submit"
-                    disabled={loading}
-                    className="mt-6 justify-center py-2 px-4 h-[50px] border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#00936C] hover:bg-[#00936ce0] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 w-full flex items-center"
-                >
-                    {loading ? <ClipLoader color="white" size={20} /> : "Share with Customer"}
-                </button>
-            </form>
-        </div>
+          : item
+      )
     );
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    const sanitizedItems = hotelItems
+      .map((item) => ({
+        city: item.city,
+        package_hotel_id: item.package_hotel_id || undefined,
+        hotel_name: item.hotel_name.trim(),
+        contact_name: item.contact_name.trim(),
+        contact_phone: item.contact_phone.trim(),
+        note: item.note.trim(),
+      }))
+      .filter(hasHotelSharedDetails);
+
+    if (sanitizedItems.length === 0) {
+      toast.error("Add at least one hotel confirmation before saving.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const payload = {
+        partner_session_token: booking.partner_session_token,
+        booking_number: booking.booking_number,
+        detail_for: "Hotel",
+        hotel_items: JSON.stringify(sanitizedItems),
+      };
+
+      if (isEditing) {
+        await updateTransportDetails(payload);
+        toast.success("Hotel arrangement updated successfully.");
+      } else {
+        await postTransportDetails(payload);
+        toast.success("Hotel arrangement shared successfully.");
+      }
+
+      navigate(-1);
+    } catch (error) {
+      console.error("Failed to submit hotel arrangement:", error);
+      toast.error("Failed to save hotel arrangement.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      <Toaster position="top-right" />
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {hotelItems.map((item, index) => (
+          <div key={`${item.city}-${index}`} className="rounded bg-white border p-6 space-y-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h1 className="text-gray-700 text-lg font-medium">{item.cityLabel}</h1>
+                <p className="text-sm text-gray-500">
+                  Package hotel defaults stay visible. Add traveler-facing contacts or notes only when needed.
+                </p>
+              </div>
+              {(item.packageSummary.hotelName ||
+                item.packageSummary.rating ||
+                item.packageSummary.distance) && (
+                <div className="rounded-md bg-[#f7faf8] px-4 py-3 text-sm text-gray-600">
+                  <p className="font-medium text-gray-700">Package default</p>
+                  <p>{item.packageSummary.hotelName || "No default hotel"}</p>
+                  <p>
+                    {[item.packageSummary.rating, item.packageSummary.distance]
+                      .filter(Boolean)
+                      .join(" • ") || "No extra package metadata"}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              {!item.packageSummary.hotelName ? (
+                <div>
+                  <label className="text-sm text-gray-500">Hotel name</label>
+                  <input
+                    type="text"
+                    value={item.hotel_name}
+                    onChange={(event) =>
+                      updateItemField(index, "hotel_name", event.target.value)
+                    }
+                    className="mt-1 block w-full rounded border-[2px] border-[#DEDDDD] px-4 py-2 text-sm text-gray-700"
+                  />
+                </div>
+              ) : (
+                <div className="rounded-md border border-[#dce7e1] bg-[#f7faf8] px-4 py-3 text-sm text-gray-600">
+                  Hotel name already comes from the package. Use the fields below only for traveler-facing desk contacts, phone numbers, or notes.
+                </div>
+              )}
+              <div>
+                <label className="text-sm text-gray-500">Contact name</label>
+                <input
+                  type="text"
+                  value={item.contact_name}
+                  onChange={(event) =>
+                    updateItemField(index, "contact_name", event.target.value)
+                  }
+                  className="mt-1 block w-full rounded border-[2px] border-[#DEDDDD] px-4 py-2 text-sm text-gray-700"
+                />
+              </div>
+              <div>
+                <label className="text-sm text-gray-500">Contact phone</label>
+                <input
+                  type="tel"
+                  value={item.contact_phone}
+                  onChange={(event) =>
+                    updateItemField(index, "contact_phone", event.target.value)
+                  }
+                  className="mt-1 block w-full rounded border-[2px] border-[#DEDDDD] px-4 py-2 text-sm text-gray-700"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm text-gray-500">Operator note</label>
+              <textarea
+                value={item.note}
+                onChange={(event) => updateItemField(index, "note", event.target.value)}
+                className="mt-1 h-32 w-full rounded border border-gray-300 p-4 text-sm text-gray-700"
+                placeholder="Keep package defaults and booking-specific hotel confirmations clearly separated."
+              />
+            </div>
+          </div>
+        ))}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="flex h-[50px] w-full items-center justify-center rounded-md bg-[#00936C] px-4 py-2 text-sm font-medium text-white hover:bg-[#00936ce0] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {loading ? <ClipLoader color="white" size={20} /> : "Share with Customer"}
+        </button>
+      </form>
+    </div>
+  );
 };
 
 export default HotelArrangementForm;

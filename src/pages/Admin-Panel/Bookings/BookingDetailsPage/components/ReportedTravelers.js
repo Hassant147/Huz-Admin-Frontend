@@ -1,4 +1,7 @@
-import React from "react";
+import React, { useContext, useMemo, useState } from "react";
+import toast from "react-hot-toast";
+import { BookingContext } from "../../../../../context/BookingContext";
+import { manageTravelerIssue } from "../../../../../utility/Api";
 
 const formatDate = (value) => {
   if (!value) {
@@ -17,103 +20,172 @@ const formatDate = (value) => {
   });
 };
 
-const buildMediaUrl = (value) => {
-  const rawValue = `${value || ""}`.trim();
-  const baseUrl = `${process.env.REACT_APP_API_BASE_URL || ""}`.trim().replace(/\/$/, "");
-
-  if (!rawValue) {
-    return "";
-  }
-
-  if (/^https?:\/\//i.test(rawValue)) {
-    return rawValue;
-  }
-
-  let normalizedPath = rawValue;
-  if (!rawValue.startsWith("/")) {
-    normalizedPath = rawValue.startsWith("media/") ? `/${rawValue}` : `/media/${rawValue}`;
-  }
-
-  return baseUrl ? `${baseUrl}${normalizedPath}` : normalizedPath;
-};
-
 const ReportedTravelers = ({ booking }) => {
-  const reportedTravelers = Array.isArray(booking?.traveller_detail)
-    ? booking.traveller_detail.filter((traveler) => Boolean(traveler?.report_rabbit))
-    : [];
+  const [loadingTravelerId, setLoadingTravelerId] = useState("");
+  const { refreshBookingDetails } = useContext(BookingContext);
+
+  const { partner_session_token: partnerSessionToken } = JSON.parse(
+    localStorage.getItem("SignedUp-User-Profile") || "{}"
+  );
+
+  const travelers = useMemo(
+    () => (Array.isArray(booking?.travelers) ? booking.travelers : []),
+    [booking?.travelers]
+  );
+  const travelerIssues = useMemo(
+    () =>
+      Array.isArray(booking?.traveler_issues_normalized)
+        ? booking.traveler_issues_normalized
+        : [],
+    [booking?.traveler_issues_normalized]
+  );
+
+  const handleIssueAction = async (traveler, action, issue) => {
+    setLoadingTravelerId(traveler?.id || "");
+    try {
+      await manageTravelerIssue({
+        partnerSessionToken,
+        bookingNumber: booking?.booking_number,
+        passportId: action === "report" ? traveler?.id : undefined,
+        travelerIssueId: issue?.id,
+        action,
+        issueType: issue?.issueType || "reported",
+      });
+      await refreshBookingDetails(booking?.booking_number);
+      toast.success(
+        action === "resolve"
+          ? "Traveler issue resolved."
+          : action === "reopen"
+          ? "Traveler issue reopened."
+          : "Traveler reported successfully."
+      );
+    } catch (error) {
+      console.error("Traveler issue action failed:", error);
+      toast.error("Failed to update traveler issue.");
+    } finally {
+      setLoadingTravelerId("");
+    }
+  };
+
+  if (travelers.length === 0) {
+    return null;
+  }
 
   return (
     <section className="rounded-lg border border-amber-200 bg-amber-50 p-4">
       <div className="mb-4">
-        <h2 className="text-lg font-semibold text-amber-950">Reported Travelers</h2>
+        <h2 className="text-lg font-semibold text-amber-950">
+          Reported Traveler Management
+        </h2>
         <p className="text-sm text-amber-900">
-          Travelers marked with a reported issue by the operator workflow.
+          Reported state is traveler-specific. Admin can resolve, reopen, or add
+          new traveler reports without treating the whole booking as one flat issue.
         </p>
       </div>
 
-      {reportedTravelers.length ? (
-        <div className="overflow-x-auto rounded-lg border border-amber-200 bg-white">
-          <table className="min-w-full divide-y divide-amber-100 text-sm">
-            <thead className="bg-amber-50 text-left text-xs uppercase tracking-wide text-amber-900">
-              <tr>
-                <th className="px-4 py-3">Photo</th>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Passport</th>
-                <th className="px-4 py-3">DOB</th>
-                <th className="px-4 py-3">Country</th>
-                <th className="px-4 py-3">Expiry</th>
-                <th className="px-4 py-3">Document</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-amber-100 text-gray-700">
-              {reportedTravelers.map((traveler) => {
-                const travelerName = `${traveler?.first_name || ""} ${traveler?.last_name || ""}`.trim();
-                const photoUrl = buildMediaUrl(traveler?.user_photo);
-                const passportUrl = buildMediaUrl(traveler?.user_passport);
+      <div className="space-y-3">
+        {travelers.map((traveler) => {
+          const openIssue = traveler?.openIssues?.[0] || null;
+          const travelerHistory = travelerIssues.filter(
+            (issue) => issue.travelerId === traveler?.id
+          );
+          const isBusy = loadingTravelerId === traveler?.id;
 
-                return (
-                  <tr key={traveler?.passport_id || traveler?.traveller_id}>
-                    <td className="px-4 py-3">
-                      {photoUrl ? (
-                        <img
-                          src={photoUrl}
-                          alt={travelerName || "Traveler"}
-                          className="h-10 w-10 rounded-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-xs text-gray-500">N/A</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">{travelerName || "N/A"}</td>
-                    <td className="px-4 py-3">{traveler?.passport_number || "N/A"}</td>
-                    <td className="px-4 py-3">{formatDate(traveler?.date_of_birth)}</td>
-                    <td className="px-4 py-3">{traveler?.passport_country || "N/A"}</td>
-                    <td className="px-4 py-3">{formatDate(traveler?.expiry_date)}</td>
-                    <td className="px-4 py-3">
-                      {passportUrl ? (
-                        <a
-                          href={passportUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#0f766e] underline"
-                        >
-                          View Passport
-                        </a>
-                      ) : (
-                        "N/A"
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <p className="text-sm text-amber-900">
-          No travelers are currently marked as reported for this booking.
-        </p>
-      )}
+          return (
+            <article
+              key={traveler?.id}
+              className="rounded-lg border border-amber-200 bg-white p-4"
+            >
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-base font-semibold text-slate-900">
+                      {traveler?.fullName || "Traveler"}
+                    </h3>
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        openIssue
+                          ? "bg-amber-100 text-amber-800"
+                          : "bg-slate-100 text-slate-700"
+                      }`}
+                    >
+                      {openIssue ? "Open issue" : "No open issue"}
+                    </span>
+                    {traveler?.groupLabel ? (
+                      <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                        {traveler.groupLabel}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  <div className="grid gap-2 text-sm text-slate-700 md:grid-cols-2">
+                    <p>Passport: {traveler?.passportNumber || "N/A"}</p>
+                    <p>Type: {traveler?.travelerType || "N/A"}</p>
+                    <p>DOB: {formatDate(traveler?.dateOfBirth)}</p>
+                    <p>Expiry: {formatDate(traveler?.expiryDate)}</p>
+                  </div>
+
+                  {openIssue?.notes ? (
+                    <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                      {openIssue.notes}
+                    </p>
+                  ) : null}
+
+                  {travelerHistory.length > 0 ? (
+                    <div className="text-xs text-slate-500">
+                      Issue history:{" "}
+                      {travelerHistory.map((issue) =>
+                        `${issue.issueType} (${issue.status})`
+                      ).join(" • ")}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {openIssue ? (
+                    <button
+                      type="button"
+                      onClick={() => handleIssueAction(traveler, "resolve", openIssue)}
+                      disabled={isBusy}
+                      className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Resolve
+                    </button>
+                  ) : null}
+
+                  {!openIssue && travelerHistory.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleIssueAction(
+                          traveler,
+                          "reopen",
+                          travelerHistory[travelerHistory.length - 1]
+                        )
+                      }
+                      disabled={isBusy}
+                      className="rounded-md bg-amber-600 px-3 py-2 text-sm font-medium text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Reopen
+                    </button>
+                  ) : null}
+
+                  {!openIssue ? (
+                    <button
+                      type="button"
+                      onClick={() => handleIssueAction(traveler, "report")}
+                      disabled={isBusy}
+                      className="rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Report traveler
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
     </section>
   );
 };

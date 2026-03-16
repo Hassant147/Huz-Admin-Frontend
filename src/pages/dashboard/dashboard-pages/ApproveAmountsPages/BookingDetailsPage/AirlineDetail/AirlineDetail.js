@@ -27,12 +27,9 @@ const getFileIcon = (filename) => {
 };
 
 const AirlineDetails = ({ booking }) => {
-  const { REACT_APP_API_BASE_URL } = process.env;
-  const airlineDetails = booking?.booking_airline_details || [];
+  const airlineDetails = booking?.airline_cards || [];
   const airlineDocuments = useMemo(() => {
-    return (booking?.booking_documents || []).filter(
-      (doc) => `${doc.document_for || ""}`.toLowerCase() === "airline"
-    );
+    return booking?.documents_by_category?.airline || [];
   }, [booking]);
 
   return (
@@ -47,14 +44,31 @@ const AirlineDetails = ({ booking }) => {
           <div className="space-y-3">
             {airlineDetails.map((detail, index) => (
               <article
-                key={`${detail.flight_from || "flight"}-${index}`}
+                key={`${detail.id || "flight"}-${index}`}
                 className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4"
               >
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <InfoTile label="Flight Date" value={formatDateTime(detail.flight_date)} />
-                  <InfoTile label="Flight Time" value={withFallback(detail.flight_time)} />
-                  <InfoTile label="From" value={withFallback(detail.flight_from)} />
-                  <InfoTile label="To" value={withFallback(detail.flight_to)} />
+                  <InfoTile
+                    label="Segment"
+                    value={withFallback(detail.label)}
+                  />
+                  <InfoTile
+                    label="Flight Date"
+                    value={formatDateTime(detail.confirmed?.flightDate)}
+                  />
+                  <InfoTile
+                    label="Flight Time"
+                    value={withFallback(detail.confirmed?.flightTime)}
+                  />
+                  <InfoTile
+                    label="Route"
+                    value={withFallback(
+                      [detail.confirmed?.flightFrom || detail.packageDefault?.flightFrom,
+                        detail.confirmed?.flightTo || detail.packageDefault?.flightTo]
+                        .filter(Boolean)
+                        .join(" -> ")
+                    )}
+                  />
                 </div>
               </article>
             ))}
@@ -70,20 +84,18 @@ const AirlineDetails = ({ booking }) => {
         {airlineDocuments.length ? (
           <div className="grid gap-3 md:grid-cols-2">
             {airlineDocuments.map((doc) => {
-              const fileName = `${doc.document_link || ""}`.split("/").pop();
-              const documentUrl = `${REACT_APP_API_BASE_URL}${doc.document_link}`;
               return (
                 <article
-                  key={doc.document_id || doc.document_link}
+                  key={doc.id || doc.href}
                   className="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-3"
                 >
                   <div className="flex items-center gap-2 text-sm text-ink-700">
-                    {getFileIcon(doc.document_link)}
-                    <span className="max-w-[180px] truncate">{withFallback(fileName)}</span>
+                    {getFileIcon(doc.title)}
+                    <span className="max-w-[180px] truncate">{withFallback(doc.title)}</span>
                   </div>
                   <AppButton
                     as="a"
-                    href={documentUrl}
+                    href={doc.href}
                     target="_blank"
                     rel="noopener noreferrer"
                     size="sm"

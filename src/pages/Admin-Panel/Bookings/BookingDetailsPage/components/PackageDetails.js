@@ -1,5 +1,4 @@
 import React from "react";
-import view from "../../../../../assets/view.svg";
 import { useNavigate } from "react-router-dom";
 
 const PackageDetails = ({ booking }) => {
@@ -10,8 +9,6 @@ const PackageDetails = ({ booking }) => {
   }
 
   const {
-    partnerSessionToken,
-    huzToken,
     package_name,
     package_cost,
     mecca_nights,

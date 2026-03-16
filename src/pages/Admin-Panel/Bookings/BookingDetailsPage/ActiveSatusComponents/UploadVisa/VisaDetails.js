@@ -1,41 +1,25 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FaFilePdf, FaFileWord, FaFileImage } from 'react-icons/fa';
-import dlt from '../../../../../../assets/booking/delete.svg';
-import { buildAdminBookingSubflowPath } from '../../../bookingRouteUtils';
+import React from "react";
+import { FaFileImage, FaFilePdf, FaFileWord } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import dlt from "../../../../../../assets/booking/delete.svg";
+import { buildAdminBookingSubflowPath } from "../../../bookingRouteUtils";
 
-const getFileIcon = (filename) => {
-  const extension = filename.split('.').pop().toLowerCase();
+const getFileIcon = (title = "") => {
+  const extension = title.split(".").pop()?.toLowerCase();
   switch (extension) {
-    case 'pdf':
+    case "pdf":
       return <FaFilePdf className="text-red-500" />;
-    case 'doc':
-    case 'docx':
+    case "doc":
+    case "docx":
       return <FaFileWord className="text-blue-500" />;
-    case 'png':
-    case 'jpg':
-    case 'jpeg':
-      return <FaFileImage className="text-green-500" />;
     default:
-      return <FaFileImage className="text-gray-500" />;
+      return <FaFileImage className="text-green-500" />;
   }
 };
 
 const VisaDetails = ({ booking, onDelete, canManage = true }) => {
-  const [documents, setDocuments] = useState([]);
-  const { REACT_APP_API_BASE_URL } = process.env;
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (booking.booking_documents_status[0].is_visa_completed) {
-      const visaDocuments = booking.booking_documents.filter(doc => doc.document_for === 'eVisa');
-      setDocuments(visaDocuments);
-    }
-  }, [booking]);
-
-  const openDocument = (documentLink) => {
-    window.open(`${REACT_APP_API_BASE_URL}${documentLink}`, '_blank');
-  };
+  const documents = booking?.documents_by_category?.evisa || [];
 
   const handleAddMore = () => {
     navigate(buildAdminBookingSubflowPath(booking?.booking_number, "upload-evisa"), {
@@ -46,7 +30,7 @@ const VisaDetails = ({ booking, onDelete, canManage = true }) => {
   return (
     <div className="space-y-2 py-2">
       <div className="flex justify-between items-center">
-        <h2 className="text-base font-medium text-gray-500">Shared Visa detail</h2>
+        <h2 className="text-base font-medium text-gray-500">Shared eVisa details</h2>
         {canManage ? (
           <button
             onClick={handleAddMore}
@@ -56,22 +40,40 @@ const VisaDetails = ({ booking, onDelete, canManage = true }) => {
           </button>
         ) : null}
       </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 my-2 bg-gray-50 rounded">
-        {documents.map((doc) => (
-          <div key={doc.document_id} className="flex justify-between items-center p-3 bg-white border border-gray-200 rounded shadow-sm">
-            <div className="flex items-center space-x-2">
-              {getFileIcon(doc.document_link)}
-              <p className="text-sm text-gray-700 cursor-pointer" onClick={() => openDocument(doc.document_link)}>
-                {doc.document_link.split('/').pop()}
-              </p>
+        {documents.length > 0 ? (
+          documents.map((document) => (
+            <div
+              key={document.id}
+              className="flex justify-between items-center p-3 bg-white border border-gray-200 rounded shadow-sm"
+            >
+              <div className="flex items-center space-x-2 min-w-0">
+                {getFileIcon(document.title)}
+                <a
+                  href={document.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="truncate text-sm text-gray-700 underline-offset-2 hover:underline"
+                >
+                  {document.title}
+                </a>
+              </div>
+              {canManage && onDelete ? (
+                <button
+                  onClick={() => onDelete(document.raw?.document_id || document.id)}
+                  className="text-red-500 hover:text-red-600"
+                >
+                  <img src={dlt} alt="delete" />
+                </button>
+              ) : null}
             </div>
-            {canManage && onDelete ? (
-              <button onClick={() => onDelete(doc.document_id)} className="text-red-500 hover:text-red-600">
-                <img src={dlt} />
-              </button>
-            ) : null}
-          </div>
-        ))}
+          ))
+        ) : (
+          <p className="col-span-full p-4 text-sm text-gray-600">
+            No eVisa documents have been uploaded yet.
+          </p>
+        )}
       </div>
     </div>
   );

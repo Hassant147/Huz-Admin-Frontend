@@ -80,6 +80,9 @@ const BookingDetailsContent = ({ booking, loading, error }) => {
     (a, b) => new Date(a.create_time) - new Date(b.create_time)
   );
   const issueStatus = normalizeIssueStatus(booking?.issue_status);
+  const hasTravelerIssues =
+    (Array.isArray(booking?.reported_travelers) && booking.reported_travelers.length > 0) ||
+    (Array.isArray(booking?.open_traveler_issues) && booking.open_traveler_issues.length > 0);
 
   return (
     <div className="flex lg:flex-row flex-col lg:h-full mb-10">
@@ -91,7 +94,9 @@ const BookingDetailsContent = ({ booking, loading, error }) => {
         )}
       </div>
       <div className="lg:w-2/3 lg:px-4 py-4 lg:py-0 space-y-4 flex-grow">
-        {issueStatus === "REPORTED" ? <ReportedTravelers booking={booking} /> : null}
+        {issueStatus === "REPORTED" || hasTravelerIssues ? (
+          <ReportedTravelers booking={booking} />
+        ) : null}
         <PackageDetails booking={booking} />
         <BookingInfo booking={booking} />
 

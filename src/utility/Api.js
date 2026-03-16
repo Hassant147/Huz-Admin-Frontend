@@ -785,7 +785,8 @@ export const updateBookingDocumentStatus = async (
   bookingNumber,
   documentType,
   file,
-  user_session_token
+  user_session_token,
+  options = {}
 ) => {
   try {
     const formData = new FormData();
@@ -793,10 +794,19 @@ export const updateBookingDocumentStatus = async (
     formData.append("booking_number", bookingNumber);
     formData.append("document_link", file); // Ensure this is a File object
     formData.append("document_for", documentType);
+    formData.append("document_category", options.documentCategory || documentType);
     formData.append("partner_session_token", partnerSessionToken);
-
-    // Log FormData contents
-    for (let [key, value] of formData.entries()) {
+    if (options.documentScope) {
+      formData.append("document_scope", options.documentScope);
+    }
+    if (options.documentTitle) {
+      formData.append("document_title", options.documentTitle);
+    }
+    if (options.bookingGroupId) {
+      formData.append("booking_group_id", options.bookingGroupId);
+    }
+    if (options.travelerId) {
+      formData.append("traveler_id", options.travelerId);
     }
 
     const response = await apiClient.post(
@@ -817,24 +827,30 @@ export const updateBookingDocumentStatus = async (
 
 // Function to post airline details for booking
 export const PostAirlineDetails = async (
-  partnerSessionToken,
+  partnerSessionTokenOrPayload,
   bookingNumber,
   flightDate,
   flightTime,
   flightFrom,
   flightTo
 ) => {
+  const payload =
+    partnerSessionTokenOrPayload &&
+    typeof partnerSessionTokenOrPayload === "object" &&
+    !Array.isArray(partnerSessionTokenOrPayload)
+      ? partnerSessionTokenOrPayload
+      : {
+          partner_session_token: partnerSessionTokenOrPayload,
+          booking_number: bookingNumber,
+          flight_date: flightDate,
+          flight_time: flightTime,
+          flight_from: flightFrom,
+          flight_to: flightTo,
+        };
   try {
     const response = await apiClient.post(
       "/bookings/manage_booking_airline_details/",
-      {
-        partner_session_token: partnerSessionToken,
-        booking_number: bookingNumber,
-        flight_date: flightDate,
-        flight_time: flightTime,
-        flight_from: flightFrom,
-        flight_to: flightTo,
-      }
+      payload
     );
     return response.data;
   } catch (error) {
@@ -864,7 +880,7 @@ export const deleteBookingDocument = async (props) => {
 
 // function to update airline details on booking forms
 export const updateAirlineDetails = async (
-  partnerSessionToken,
+  partnerSessionTokenOrPayload,
   bookingNumber,
   airline_id,
   flightDate,
@@ -872,15 +888,20 @@ export const updateAirlineDetails = async (
   flightFrom,
   flightTo
 ) => {
-  const data = {
-    partner_session_token: partnerSessionToken,
-    booking_number: bookingNumber,
-    booking_airline_id: airline_id,
-    flight_date: flightDate,
-    flight_time: flightTime,
-    flight_from: flightFrom,
-    flight_to: flightTo,
-  };
+  const data =
+    partnerSessionTokenOrPayload &&
+    typeof partnerSessionTokenOrPayload === "object" &&
+    !Array.isArray(partnerSessionTokenOrPayload)
+      ? partnerSessionTokenOrPayload
+      : {
+          partner_session_token: partnerSessionTokenOrPayload,
+          booking_number: bookingNumber,
+          booking_airline_id: airline_id,
+          flight_date: flightDate,
+          flight_time: flightTime,
+          flight_from: flightFrom,
+          flight_to: flightTo,
+        };
 
   try {
     const response = await apiClient.put(
@@ -896,36 +917,10 @@ export const updateAirlineDetails = async (
 
 //function to Post transport/Hotel forms in booking
 export const postTransportDetails = async (formData) => {
-  const {
-    partner_session_token,
-    booking_number,
-    detail_for,
-    jeddah_name,
-    jeddah_number,
-    mecca_name,
-    mecca_number,
-    madinah_name,
-    madinah_number,
-    comment_1,
-    comment_2,
-  } = formData;
-
   try {
     const response = await apiClient.post(
       "/bookings/manage_booking_hotel_or_transport_details/",
-      {
-        partner_session_token,
-        booking_number,
-        detail_for,
-        jeddah_name,
-        jeddah_number,
-        mecca_name,
-        mecca_number,
-        madinah_name,
-        madinah_number,
-        comment_1,
-        comment_2,
-      }
+      formData
     );
     return response.data;
   } catch (error) {
@@ -965,6 +960,35 @@ export const updateTransportDetails = async (formData) => {
     return response.data;
   } catch (error) {
     console.error("Failed to update transport details:", error);
+    throw error;
+  }
+};
+
+export const manageTravelerIssue = async ({
+  partnerSessionToken,
+  bookingNumber,
+  passportId,
+  travelerIssueId,
+  action = "report",
+  issueType = "reported",
+  notes = "",
+}) => {
+  try {
+    const response = await apiClient.put(
+      "/bookings/manage_traveler_issues/",
+      {
+        partner_session_token: partnerSessionToken,
+        booking_number: bookingNumber,
+        ...(passportId ? { passport_id: passportId } : {}),
+        ...(travelerIssueId ? { traveler_issue_id: travelerIssueId } : {}),
+        action,
+        issue_type: issueType,
+        notes,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Failed to manage traveler issue:", error);
     throw error;
   }
 };

@@ -13,8 +13,7 @@ import { buildAdminBookingSubflowPath } from '../bookingRouteUtils';
 
 const Active = () => {
   const { booking, refreshBookingDetails } = useContext(BookingContext);
-  const { booking_documents_status, transport_details = [], hotel_details = [] } = booking || {};
-  const documentStatus = booking_documents_status?.[0] || {};
+  const documentStatus = booking?.fulfillment_summary || {};
   const bookingNumber = booking?.booking_number || '';
 
   const [completed, setCompleted] = useState(false);
@@ -56,7 +55,7 @@ const Active = () => {
 
   return (
     <div className="space-y-2">
-      {documentStatus.is_visa_completed ? (
+      {documentStatus.visaCompleted ? (
         <VisaDetails
           booking={booking}
           onDelete={(documentId) => handleDelete(documentId, 'booking_required_documents')}
@@ -89,7 +88,7 @@ const Active = () => {
         </div>
       )}
 
-      {documentStatus.is_airline_detail_completed ? (
+      {documentStatus.airlineDetailsCompleted ? (
         <AirlineDetails
           booking={booking}
           onDelete={(documentId) => handleDelete(documentId, 'booking_required_documents')}
@@ -122,11 +121,8 @@ const Active = () => {
         </div>
       )}
 
-      {documentStatus.is_transport_completed ? (
-        <TransportDetails
-          details={transport_details}
-          onDelete={(documentId) => handleDelete(documentId, 'transport_details')}
-        />
+      {documentStatus.transportCompleted ? (
+        <TransportDetails booking={booking} />
       ) : (
         <div
           className="my-2 p-3 border border-[#DCDCDC] flex justify-between items-center bg-gray-50 rounded"
@@ -155,11 +151,8 @@ const Active = () => {
         </div>
       )}
 
-      {documentStatus.is_hotel_completed ? (
-        <HotelDetails
-          details={hotel_details}
-          onDelete={(documentId) => handleDelete(documentId, 'hotel_details')}
-        />
+      {documentStatus.hotelCompleted ? (
+        <HotelDetails booking={booking} />
       ) : (
         <div
           className="my-2 p-3 border border-[#DCDCDC] flex justify-between items-center bg-gray-50 rounded"

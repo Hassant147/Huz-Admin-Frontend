@@ -6,23 +6,20 @@ import { BiErrorAlt } from "react-icons/bi";
 import { useNavigate } from "react-router-dom";
 import { updateBookingDocumentStatus, deleteBookingDocument } from '../../../../../../utility/Api';
 import toast, { Toaster } from 'react-hot-toast';
-import { ClipLoader } from 'react-spinners';
 
 const UploadVisa = ({ isEditing, booking }) => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [fileErrors, setFileErrors] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
   const { REACT_APP_API_BASE_URL } = process.env;
 
   useEffect(() => {
     if (isEditing && booking) {
-      const existingFiles = booking.booking_documents
-        .filter(doc => doc.document_for === "eVisa")
+      const existingFiles = (booking.documents_by_category?.evisa || [])
         .map(doc => ({
-          file: new File([], doc.document_link.split('/').pop()), // Create a file-like object
-          previewUrl: `${REACT_APP_API_BASE_URL}${doc.document_link}`
+          file: new File([], doc.title || doc.href.split('/').pop()),
+          previewUrl: doc.href || `${REACT_APP_API_BASE_URL}${doc.document_link}`
         }));
       setSelectedFiles(existingFiles);
     } else {
@@ -52,35 +49,23 @@ const UploadVisa = ({ isEditing, booking }) => {
     setSelectedFiles(prevFiles => [...prevFiles, ...newFiles]);
 
     for (let { file } of newFiles) {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64data = reader.result;
-        const fileData = {
-          name: file.name,
-          size: file.size,
-          type: file.type,
-          base64: base64data,
-        };
-
-        try {
-          setIsLoading(true);
-          const response = await updateBookingDocumentStatus(
-            booking.partner_session_token,
-            booking.booking_number,
-            'eVisa',
-            file,
-            booking.user_session_token
-          );
-          toast.success('eVisa uploaded successfully!');
-        } catch (error) {
-          console.error('API call failed:', error);
-          setErrorMessage('Failed to upload eVisa.');
-          toast.error('Failed to upload eVisa.');
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      reader.readAsDataURL(file);
+      try {
+        await updateBookingDocumentStatus(
+          booking.partner_session_token,
+          booking.booking_number,
+          'eVisa',
+          file,
+          booking.user_session_token,
+          {
+            documentCategory: "eVisa",
+          }
+        );
+        toast.success('eVisa uploaded successfully!');
+      } catch (error) {
+        console.error('API call failed:', error);
+        setErrorMessage('Failed to upload eVisa.');
+        toast.error('Failed to upload eVisa.');
+      }
     }
   };
 
@@ -141,7 +126,7 @@ const UploadVisa = ({ isEditing, booking }) => {
               Drop files here or click to upload
             </p>
             <p className="text-[#4B465C] font-normal md:text-[15px] text-[12px] mt-3 md:mt-0 justify-center text-center opacity-80">
-              (This is just a demo dropzone. Selected files are not actually uploaded.)
+              Upload traveler-facing eVisa documents in PNG, JPG, JPEG, PDF, DOC, or DOCX format.
             </p>
           </div>
           <div className="w-full overflow-y-auto max-h-80 rounded-lg p-2 space-y-2">

@@ -1,5 +1,4 @@
 import axios from "axios";
-import FormData from "form-data";
 
 // Ensure the token is correctly formatted without spaces
 const authHeader = `${process.env.REACT_APP_AUTH_TOKEN}`;
