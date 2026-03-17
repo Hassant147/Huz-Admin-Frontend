@@ -165,6 +165,8 @@ const mergeSettlementReviewBookingDetail = (detailBooking = {}, paymentSource = 
     payment_detail: Array.isArray(paymentSource.payment_detail)
       ? paymentSource.payment_detail
       : [],
+    initial_payment_status:
+      paymentSource.initial_payment_status || detailBooking.initial_payment_status,
     minimum_payment_status:
       paymentSource.minimum_payment_status || detailBooking.minimum_payment_status,
     full_payment_status:

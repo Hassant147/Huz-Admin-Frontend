@@ -1,11 +1,12 @@
 import React from "react";
+import { resolveInitialPaymentStatus } from "../../../../../../shared/bookingWorkflowContract.js";
 
 const ViewOnly = ({ booking }) => {
   if (!booking) {
     return null;
   }
 
-  const minimumPaymentStatus = booking.minimum_payment_status || "NOT_SUBMITTED";
+  const initialPaymentStatus = resolveInitialPaymentStatus(booking).toUpperCase();
   const fullPaymentStatus = booking.full_payment_status || "NOT_SUBMITTED";
   const remainingAmountDue = Number(booking.remaining_amount_due || 0);
   const canEditTravellers = Boolean(booking.client_can_edit_travellers);
@@ -15,13 +16,13 @@ const ViewOnly = ({ booking }) => {
       <div>
         <h2 className="text-lg font-medium text-gray-700">View-only booking</h2>
         <p className="text-sm text-gray-500">
-          The booking is visible because minimum payment has been approved, but it is not ready for operator action yet.
+          The booking is visible because the first payment gate is satisfied, but it is not ready for operator action yet.
         </p>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Minimum payment</p>
-          <p className="mt-1 text-sm font-medium text-slate-700">{minimumPaymentStatus}</p>
+          <p className="text-xs uppercase tracking-wide text-slate-500">Initial payment</p>
+          <p className="mt-1 text-sm font-medium text-slate-700">{initialPaymentStatus}</p>
         </div>
         <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
           <p className="text-xs uppercase tracking-wide text-slate-500">Full payment</p>

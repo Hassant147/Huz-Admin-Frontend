@@ -779,6 +779,23 @@ export const updateBookingStatus = async (
   }
 };
 
+export const closeBooking = async (partnerSessionToken, bookingNumber) => {
+  try {
+    const response = await apiClient.put(
+      "/bookings/update_booking_status_into_close/",
+      {
+        partner_session_token: partnerSessionToken,
+        booking_number: bookingNumber,
+      }
+    );
+    return response.data;
+  } catch (error) {
+    throw new Error(
+      error.response ? error.response.data.message : error.message
+    );
+  }
+};
+
 // Function to update booking document status
 export const updateBookingDocumentStatus = async (
   partnerSessionToken,

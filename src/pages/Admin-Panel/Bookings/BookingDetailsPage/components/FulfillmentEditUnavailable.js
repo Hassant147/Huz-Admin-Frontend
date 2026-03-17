@@ -19,8 +19,8 @@ const FulfillmentEditUnavailable = ({ booking }) => {
       </h2>
       <p className="mt-2 text-sm text-amber-900">
         {statusLabel
-          ? `This booking is currently ${statusLabel}. Only bookings in fulfillment or ready for travel can be edited from this page.`
-          : "Only bookings in fulfillment or ready for travel can be edited from this page."}
+          ? `This booking is currently ${statusLabel}. Fulfillment editing is only available while the booking is in fulfillment or ready for travel.`
+          : "Fulfillment editing is only available while the booking is in fulfillment or ready for travel."}
       </p>
       {bookingNumber ? (
         <Link

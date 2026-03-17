@@ -1,16 +1,12 @@
-const CANONICAL_BOOKING_STATUSES = new Set([
-  "HOLD",
-  "TRAVELER_DETAILS_PENDING",
-  "AWAITING_FINAL_PAYMENT",
-  "READY_FOR_OPERATOR",
-  "IN_FULFILLMENT",
-  "READY_FOR_TRAVEL",
-  "COMPLETED",
-  "CANCELLED",
-  "EXPIRED",
-]);
-const CANONICAL_ISSUE_STATUSES = new Set(["NONE", "OPERATOR_OBJECTION", "REPORTED"]);
-const FULFILLMENT_MANAGEABLE_STATUSES = new Set(["IN_FULFILLMENT", "READY_FOR_TRAVEL"]);
+import {
+  getWorkflowBucketLabel as getSharedWorkflowBucketLabel,
+  normalizeBookingStatusUpper,
+  normalizeIssueStatusUpper,
+  normalizeWorkflowBucket as normalizeSharedWorkflowBucket,
+  resolveBackendActionFlags,
+  resolveBookingDetailScreen,
+  resolveWorkflowBucket,
+} from "../../../../../shared/bookingWorkflowContract.js";
 
 export const WORKFLOW_OPTIONS = [
   { value: "VIEW_ONLY", label: "View Only" },
@@ -54,67 +50,25 @@ const WORKFLOW_META = {
 };
 
 export const normalizeBookingStatus = (value) => {
-  const normalized = `${value || ""}`.trim().toUpperCase();
-  if (CANONICAL_BOOKING_STATUSES.has(normalized)) {
-    return normalized;
-  }
-
-  return "";
+  return normalizeBookingStatusUpper(value);
 };
 
 export const normalizeIssueStatus = (value) => {
-  const normalized = `${value || ""}`.trim().toUpperCase();
-  if (CANONICAL_ISSUE_STATUSES.has(normalized)) {
-    return normalized;
-  }
-
-  return "";
+  return normalizeIssueStatusUpper(value);
 };
 
-export const normalizeWorkflowBucket = (value) => `${value || ""}`.trim().toUpperCase();
+export const normalizeWorkflowBucket = (value) => normalizeSharedWorkflowBucket(value);
 
 export const canManageFulfillmentDetails = (bookingOrStatus) =>
-  FULFILLMENT_MANAGEABLE_STATUSES.has(
-    normalizeBookingStatus(
-      bookingOrStatus && typeof bookingOrStatus === "object"
-        ? bookingOrStatus?.booking_status
-        : bookingOrStatus
-    )
-  );
+  bookingOrStatus && typeof bookingOrStatus === "object"
+    ? resolveBackendActionFlags(bookingOrStatus).canEditFulfillment
+    : ["IN_FULFILLMENT", "READY_FOR_TRAVEL"].includes(normalizeBookingStatus(bookingOrStatus));
 
 export const getWorkflowBucketLabel = (value) =>
-  WORKFLOW_META[normalizeWorkflowBucket(value)]?.label || "Booking";
+  WORKFLOW_META[normalizeWorkflowBucket(value)]?.label ||
+  getSharedWorkflowBucketLabel(value);
 
-export const getBookingWorkflowBucket = (booking) => {
-  const workflowBucket = normalizeWorkflowBucket(booking?.workflow_bucket);
-  if (workflowBucket) {
-    return workflowBucket;
-  }
-
-  const issueStatus = normalizeIssueStatus(booking?.issue_status);
-  if (issueStatus === "OPERATOR_OBJECTION" || issueStatus === "REPORTED") {
-    return "ISSUES";
-  }
-
-  switch (normalizeBookingStatus(booking?.booking_status)) {
-    case "TRAVELER_DETAILS_PENDING":
-    case "AWAITING_FINAL_PAYMENT":
-      return "VIEW_ONLY";
-    case "READY_FOR_OPERATOR":
-      return "READY";
-    case "IN_FULFILLMENT":
-      return "FULFILLMENT";
-    case "READY_FOR_TRAVEL":
-      return "READY_FOR_TRAVEL";
-    case "COMPLETED":
-      return "COMPLETED";
-    case "CANCELLED":
-    case "EXPIRED":
-      return "HISTORY";
-    default:
-      return "";
-  }
-};
+export const getBookingWorkflowBucket = (booking) => resolveWorkflowBucket(booking);
 
 export const getBookingDisplayMeta = (booking) => {
   const workflowBucket = getBookingWorkflowBucket(booking);
@@ -133,34 +87,18 @@ export const getBookingDisplayMeta = (booking) => {
     };
   }
 
+  if (issueStatus && issueStatus !== "NONE") {
+    return {
+      label: issueStatus.replace(/_/g, " "),
+      badgeTone: WORKFLOW_META.ISSUES.badgeTone,
+    };
+  }
+
   return WORKFLOW_META[workflowBucket] || {
     label: normalizeBookingStatus(booking?.booking_status) || "Booking",
     badgeTone: "bg-gray-200 text-gray-800 font-semibold",
   };
 };
 
-export const getBookingWorkflowScreen = (booking) => {
-  const issueStatus = normalizeIssueStatus(booking?.issue_status);
-  if (issueStatus === "OPERATOR_OBJECTION") {
-    return "ISSUE";
-  }
-
-  switch (normalizeBookingStatus(booking?.booking_status)) {
-    case "TRAVELER_DETAILS_PENDING":
-    case "AWAITING_FINAL_PAYMENT":
-      return "VIEW_ONLY";
-    case "READY_FOR_OPERATOR":
-      return "READY";
-    case "IN_FULFILLMENT":
-      return "FULFILLMENT";
-    case "READY_FOR_TRAVEL":
-      return "READY_FOR_TRAVEL";
-    case "COMPLETED":
-      return "COMPLETED";
-    case "CANCELLED":
-    case "EXPIRED":
-      return "HISTORY";
-    default:
-      return "VIEW_ONLY";
-  }
-};
+export const getBookingWorkflowScreen = (booking) =>
+  resolveBookingDetailScreen(booking);

@@ -67,12 +67,13 @@ const BookingDetailsContent = ({ booking, loading, error }) => {
           />
         );
       case "READY_FOR_TRAVEL":
+        return <Completed booking={booking} mode="ready_for_travel" />;
       case "COMPLETED":
-        return <Completed booking={booking} />;
+        return <Completed booking={booking} mode="completed" />;
       case "HISTORY":
         return <History booking={booking} />;
       default:
-        return <div>No booking status found</div>;
+        return <div>No synced booking workflow screen is available for this booking.</div>;
     }
   };
 
@@ -106,7 +107,7 @@ const BookingDetailsContent = ({ booking, loading, error }) => {
             className="w-full text-left p-4 border rounded-lg bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring focus:ring-gray-300 flex justify-between items-center"
           >
             <span className="text-lg font-medium text-gray-800">
-              Objections
+              Correction history
             </span>
             {mainObjectionsExpanded ? (
               <FaChevronUp className="text-gray-800" />
@@ -117,7 +118,7 @@ const BookingDetailsContent = ({ booking, loading, error }) => {
           {mainObjectionsExpanded && (
             <div className="mt-4">
               <h2 className="text-lg font-medium text-gray-600 mb-4">
-                Objections Raised
+                Operator correction requests
               </h2>
               {sortedObjections.map((objection) => (
                 <div key={objection.objection_id} className="mb-2">
@@ -190,7 +191,7 @@ const BookingDetails = () => {
   return (
     <AdminPanelLayout
       title="Booking Details"
-      subtitle="Review booking information and process status actions."
+      subtitle="Review the current booking state, traveler issues, and the next allowed admin action."
       mainClassName="py-5 bg-[#F9F9F9]"
     >
       <div className="pt-2">

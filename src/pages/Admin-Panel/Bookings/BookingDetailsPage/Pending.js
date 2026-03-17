@@ -15,16 +15,8 @@ const Pending = ({ booking }) => {
   const formRef = useRef(null);
 
   const actionBlockedReason = useMemo(() => {
-    if (booking?.operator_can_act) {
+    if (booking?.actions?.canTakeDecision) {
       return '';
-    }
-
-    if (booking?.full_payment_status !== 'APPROVED') {
-      return 'Full payment is still pending Huz admin approval.';
-    }
-
-    if (booking?.client_can_edit_travellers) {
-      return 'Traveler details are still incomplete.';
     }
 
     return 'This booking is not actionable yet.';
@@ -37,7 +29,7 @@ const Pending = ({ booking }) => {
       return;
     }
 
-    if (!booking?.operator_can_act) {
+    if (!booking?.actions?.canTakeDecision) {
       toast.error(actionBlockedReason || 'This booking is not actionable yet.');
       return;
     }
@@ -100,10 +92,14 @@ const Pending = ({ booking }) => {
   return (
     <div className="p-4 bg-white border border-gray-300 shadow-sm rounded-lg">
       <Toaster position="top-right" reverseOrder={false} />
-      <h2 className="text-lg font-medium text-gray-600 mb-4">Your action</h2>
+      <h2 className="text-lg font-medium text-gray-600 mb-2">Operator decision</h2>
+      <p className="mb-4 text-sm text-gray-500">
+        This booking is ready for admin/operator review. Choose whether fulfillment should begin now
+        or whether the customer must correct traveler details first.
+      </p>
       <form ref={formRef} onSubmit={handleSubmit}>
         <div className="mb-4">
-          <label className="text-sm font-normal text-gray-700">Which kind of option you want to choose?</label>
+          <label className="text-sm font-normal text-gray-700">Choose the next workflow action</label>
           <div className="mt-2">
             <label className="inline-flex items-center">
               <input
@@ -114,7 +110,7 @@ const Pending = ({ booking }) => {
                 onChange={(e) => setStatus(e.target.value)}
                 className="form-radio text-green-500"
               />
-              <span className="ml-2 text-xs font-normal text-gray-600">Accept and start fulfillment</span>
+              <span className="ml-2 text-xs font-normal text-gray-600">Approve and move into fulfillment</span>
             </label>
             <label className="inline-flex items-center ml-6">
               <input
@@ -125,7 +121,7 @@ const Pending = ({ booking }) => {
                 onChange={(e) => setStatus(e.target.value)}
                 className="form-radio text-red-500"
               />
-              <span className="ml-2 text-xs font-normal text-gray-600">Raise objection</span>
+              <span className="ml-2 text-xs font-normal text-gray-600">Request traveler correction</span>
             </label>
           </div>
           {statusError && <p className="text-red-500 text-xs mt-1">{statusError}</p>}
@@ -136,7 +132,7 @@ const Pending = ({ booking }) => {
             onChange={(e) => setRemarks(e.target.value)}
             className="mt-2 p-2 border border-gray-300 rounded w-full text-xs font-normal text-gray-700"
             rows="4"
-            placeholder="Write about your remarks"
+            placeholder="Add the note that should explain this decision"
             style={{ '::placeholder': { fontSize: '12px', fontWeight: 'normal', color: '#718096' } }}
           ></textarea>
           {remarksError && <p className="text-red-500 text-xs mt-1">{remarksError}</p>}
@@ -148,7 +144,7 @@ const Pending = ({ booking }) => {
         className="bg-[#00936C] text-sm text-normal w-full text-white py-2 rounded-md flex items-center justify-center"
         disabled={loading}
       >
-        {loading ? <ClipLoader size={20} color="#fff" /> : 'Submit your decision'}
+        {loading ? <ClipLoader size={20} color="#fff" /> : 'Save decision'}
       </button>
     </div>
   );

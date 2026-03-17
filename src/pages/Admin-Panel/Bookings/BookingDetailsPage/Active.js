@@ -10,11 +10,13 @@ import HotelDetails from './ActiveSatusComponents/HotelArrangement/HotelDetails'
 import { deleteBookingDocument } from '../../../../utility/Api';
 import toast from 'react-hot-toast';
 import { buildAdminBookingSubflowPath } from '../bookingRouteUtils';
+import FulfillmentEditUnavailable from './components/FulfillmentEditUnavailable';
 
 const Active = () => {
   const { booking, refreshBookingDetails } = useContext(BookingContext);
   const documentStatus = booking?.fulfillment_summary || {};
   const bookingNumber = booking?.booking_number || '';
+  const canManageDetails = Boolean(booking?.actions?.canEditFulfillment);
 
   const [completed, setCompleted] = useState(false);
 
@@ -46,11 +48,15 @@ const Active = () => {
 
   if (completed) {
     return (
-      <div className="p-4 bg-white border border-gray-300 shadow-sm rounded-lg">
-        <h2 className="text-lg font-medium text-gray-600 mb-4">Booking Completed</h2>
-        <p className="text-sm text-gray-700">This booking has been completed successfully. No further actions are needed.</p>
+        <div className="p-4 bg-white border border-gray-300 shadow-sm rounded-lg">
+        <h2 className="text-lg font-medium text-gray-600 mb-4">Fulfillment is finished</h2>
+        <p className="text-sm text-gray-700">This booking has already moved past active fulfillment. Use the completed view for final status and read-only records.</p>
       </div>
     );
+  }
+
+  if (!canManageDetails) {
+    return <FulfillmentEditUnavailable booking={booking} />;
   }
 
   return (
@@ -72,18 +78,17 @@ const Active = () => {
         >
           <div>
             <h2 className="text-base font-medium text-gray-500">
-              Is eVisa confirmed?
+              Share eVisa details
             </h2>
             <p className="text-xs font-thin text-gray-500">
-              Let the customer know if their eVisa is confirmed, share eVisa with
-              customer.
+              Upload the traveler-facing visa files once the visa is confirmed for this booking.
             </p>
           </div>
           <Link
             to={buildAdminBookingSubflowPath(bookingNumber, "upload-evisa")}
             className="bg-[#00936C] md:text-[15px] text-[10px] justify-center text-center w-full lg:w-[155px] xl:w-[155px] hover:bg-green-900 text-white font-medium py-2 rounded"
           >
-            Share Details
+            Open step
           </Link>
         </div>
       )}
@@ -105,18 +110,17 @@ const Active = () => {
         >
           <div>
             <h2 className="text-base font-medium text-gray-500">
-              Are airline tickets confirmed?
+              Share airline details
             </h2>
             <p className="text-xs font-thin text-gray-500">
-              Let the customer know if their airline tickets are confirmed, share
-              tickets with customer.
+              Add the flight details and files that the traveler should see for this booking.
             </p>
           </div>
           <Link
             to={buildAdminBookingSubflowPath(bookingNumber, "airline-tickets")}
             className="bg-[#00936C] md:text-[15px] text-[10px] justify-center text-center w-full lg:w-[155px] xl:w-[155px] hover:bg-green-900 text-white font-medium py-2 rounded"
           >
-            Share Details
+            Open step
           </Link>
         </div>
       )}
@@ -135,18 +139,17 @@ const Active = () => {
         >
           <div>
             <h2 className="text-base font-medium text-gray-500">
-              Is transport booking confirmed?
+              Share transport details
             </h2>
             <p className="text-xs font-thin text-gray-500">
-              Let the customer know if their transport booking is confirmed, share
-              details with customer.
+              Add the confirmed transport details or ticket file for this booking.
             </p>
           </div>
           <Link
             to={buildAdminBookingSubflowPath(bookingNumber, "transport-arrangement")}
             className="bg-[#00936C] md:text-[15px] text-[10px] justify-center text-center w-full lg:w-[155px] xl:w-[155px] hover:bg-green-900 text-white font-medium py-2 rounded"
           >
-            Share Details
+            Open step
           </Link>
         </div>
       )}
@@ -165,18 +168,17 @@ const Active = () => {
         >
           <div>
             <h2 className="text-base font-medium text-gray-500">
-              Is hotel booking confirmed?
+              Share hotel details
             </h2>
             <p className="text-xs font-thin text-gray-500">
-              Let the customer know if their hotel booking is confirmed, share
-              details with customer.
+              Add the hotel confirmation details that should be visible to the traveler.
             </p>
           </div>
           <Link
             to={buildAdminBookingSubflowPath(bookingNumber, "hotel-arrangement")}
             className="bg-[#00936C] md:text-[15px] text-[10px] justify-center text-center w-full lg:w-[155px] xl:w-[155px] hover:bg-green-900 text-white font-medium py-2 rounded"
           >
-            Share Details
+            Open step
           </Link>
         </div>
       )}

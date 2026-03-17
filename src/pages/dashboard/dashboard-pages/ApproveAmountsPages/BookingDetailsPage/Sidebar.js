@@ -13,6 +13,7 @@ import {
   getPaymentStatusLabel,
   getWorkflowSummaryLabel,
 } from "../bookingReviewUtils";
+import { resolveInitialPaymentStatus } from "../../../../../../../shared/bookingWorkflowContract.js";
 
 const Sidebar = ({ booking }) => {
   if (!booking) {
@@ -91,7 +92,7 @@ const Sidebar = ({ booking }) => {
             subtitle="Lifecycle, payment stage, and operator readiness"
             className="!items-start"
           />
-          <DetailRow icon={user} text={`Minimum: ${getPaymentStatusLabel(booking?.minimum_payment_status)}`} />
+          <DetailRow icon={user} text={`Initial: ${getPaymentStatusLabel(resolveInitialPaymentStatus(booking))}`} />
           <DetailRow icon={user} text={`Full: ${getPaymentStatusLabel(booking?.full_payment_status)}`} />
           <DetailRow icon={user} text={`Operator visible: ${booking?.operator_visible ? "Yes" : "No"}`} />
           <DetailRow icon={user} text={`Operator can act: ${booking?.operator_can_act ? "Yes" : "No"}`} />

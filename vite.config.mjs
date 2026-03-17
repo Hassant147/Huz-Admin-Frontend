@@ -40,6 +40,9 @@ export default defineConfig(({ mode }) => {
       dedupe: ["react", "react-dom"],
     },
     server: {
+      fs: {
+        allow: [".."],
+      },
       port: 3000,
     },
     preview: {

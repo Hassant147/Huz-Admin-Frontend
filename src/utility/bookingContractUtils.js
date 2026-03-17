@@ -1,3 +1,9 @@
+import {
+  resolveBackendActionFlags,
+  resolveFulfillmentSummary,
+  resolveWorkflowBucket,
+} from "../../../shared/bookingWorkflowContract.js";
+
 const ABSOLUTE_URL_PATTERN = /^[a-z][a-z0-9+.-]*:/i;
 
 const toString = (value) => String(value || "").trim();
@@ -487,34 +493,13 @@ export const adaptAdminBooking = (booking = {}) => {
     bookingFulfillment?.transport,
     documents.filter((document) => document.category === "transport")
   );
-
-  const legacyDocumentStatus =
-    Array.isArray(booking?.booking_documents_status) && booking.booking_documents_status.length > 0
-      ? booking.booking_documents_status[0]
-      : booking?.booking_documents_status && typeof booking.booking_documents_status === "object"
-      ? booking.booking_documents_status
-      : {};
-
-  const fulfillmentSummary = {
-    visaCompleted:
-      toBoolean(bookingFulfillment?.summary?.visa_completed) ||
-      toBoolean(legacyDocumentStatus?.is_visa_completed),
-    airlineDocumentsCompleted:
-      toBoolean(bookingFulfillment?.summary?.airline_documents_completed) ||
-      toBoolean(legacyDocumentStatus?.is_airline_completed),
-    airlineDetailsCompleted:
-      toBoolean(bookingFulfillment?.summary?.airline_details_completed) ||
-      toBoolean(legacyDocumentStatus?.is_airline_detail_completed),
-    hotelCompleted:
-      toBoolean(bookingFulfillment?.summary?.hotel_completed) ||
-      toBoolean(legacyDocumentStatus?.is_hotel_completed),
-    transportCompleted:
-      toBoolean(bookingFulfillment?.summary?.transport_completed) ||
-      toBoolean(legacyDocumentStatus?.is_transport_completed),
-  };
+  const fulfillmentSummary = resolveFulfillmentSummary(booking);
+  const actionFlags = resolveBackendActionFlags(booking);
+  const workflowBucket = resolveWorkflowBucket(booking) || booking?.workflow_bucket || "";
 
   return {
     ...booking,
+    workflow_bucket: workflowBucket,
     travelers,
     traveler_groups_normalized: travelerGroups,
     traveler_issues_normalized: travelerIssues,
@@ -529,5 +514,11 @@ export const adaptAdminBooking = (booking = {}) => {
     package_transport_view: packageTransport,
     transport_fulfillment_view: transport,
     fulfillment_summary: fulfillmentSummary,
+    actions: {
+      canTakeDecision: actionFlags.canTakeDecision,
+      canEditFulfillment: actionFlags.canEditFulfillment,
+      canManageTravelerIssues: actionFlags.canManageTravelerIssues,
+      canCompleteBooking: actionFlags.canCompleteBooking,
+    },
   };
 };

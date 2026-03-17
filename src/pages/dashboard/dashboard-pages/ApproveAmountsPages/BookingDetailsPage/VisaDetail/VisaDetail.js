@@ -25,7 +25,7 @@ const VisaDetails = ({ booking }) => {
   const { REACT_APP_API_BASE_URL } = process.env;
 
   const documents = useMemo(() => {
-    const visaCompleted = booking?.booking_documents_status?.[0]?.is_visa_completed;
+    const visaCompleted = Boolean(booking?.booking_fulfillment?.summary?.visa_completed);
     if (!visaCompleted) {
       return [];
     }

@@ -32,6 +32,7 @@ const ReportedTravelers = ({ booking }) => {
     () => (Array.isArray(booking?.travelers) ? booking.travelers : []),
     [booking?.travelers]
   );
+  const canManageTravelerIssues = Boolean(booking?.actions?.canManageTravelerIssues);
   const travelerIssues = useMemo(
     () =>
       Array.isArray(booking?.traveler_issues_normalized)
@@ -75,11 +76,10 @@ const ReportedTravelers = ({ booking }) => {
     <section className="rounded-lg border border-amber-200 bg-amber-50 p-4">
       <div className="mb-4">
         <h2 className="text-lg font-semibold text-amber-950">
-          Reported Traveler Management
+          Traveler issue management
         </h2>
         <p className="text-sm text-amber-900">
-          Reported state is traveler-specific. Admin can resolve, reopen, or add
-          new traveler reports without treating the whole booking as one flat issue.
+          Traveler issues are handled per traveler. Admin can report, resolve, or reopen issues without treating the whole booking as one flat problem.
         </p>
       </div>
 
@@ -142,7 +142,7 @@ const ReportedTravelers = ({ booking }) => {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {openIssue ? (
+                  {openIssue && canManageTravelerIssues ? (
                     <button
                       type="button"
                       onClick={() => handleIssueAction(traveler, "resolve", openIssue)}
@@ -153,7 +153,7 @@ const ReportedTravelers = ({ booking }) => {
                     </button>
                   ) : null}
 
-                  {!openIssue && travelerHistory.length > 0 ? (
+                  {!openIssue && travelerHistory.length > 0 && canManageTravelerIssues ? (
                     <button
                       type="button"
                       onClick={() =>
@@ -170,7 +170,7 @@ const ReportedTravelers = ({ booking }) => {
                     </button>
                   ) : null}
 
-                  {!openIssue ? (
+                  {!openIssue && canManageTravelerIssues ? (
                     <button
                       type="button"
                       onClick={() => handleIssueAction(traveler, "report")}
