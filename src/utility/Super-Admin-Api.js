@@ -6,17 +6,17 @@ import {
 } from "./requestCache";
 
 const authHeader = `${process.env.REACT_APP_AUTH_TOKEN}`;
-const LOCAL_FALLBACK_API_URL = "http://127.0.0.1:8000";
+const DEFAULT_API_BASE_URL = "https://hajjumrah.org";
 
 const resolveApiBaseURL = () => {
   const configuredURL = `${process.env.REACT_APP_API_BASE_URL || ""}`.trim();
-  const fallbackURL = LOCAL_FALLBACK_API_URL;
+  const fallbackURL = DEFAULT_API_BASE_URL;
   const normalizedBaseURL = configuredURL || fallbackURL;
   return normalizedBaseURL.replace(/\/+$/, "");
 };
 
 const baseURL = resolveApiBaseURL();
-const localFallbackBaseURL = LOCAL_FALLBACK_API_URL.replace(/\/+$/, "");
+const defaultFallbackBaseURL = DEFAULT_API_BASE_URL.replace(/\/+$/, "");
 
 const config = {
   headers: {
@@ -31,7 +31,7 @@ const apiClient = axios.create({
 });
 
 const shouldRetryWithLocalFallback = (error) => {
-  if (baseURL === localFallbackBaseURL) {
+  if (baseURL === defaultFallbackBaseURL) {
     return false;
   }
   if (error?.response) {
@@ -56,7 +56,7 @@ const requestWithFallback = async (requestConfig) => {
 
     return axios.request({
       ...requestConfig,
-      baseURL: localFallbackBaseURL,
+      baseURL: defaultFallbackBaseURL,
       headers: {
         ...config.headers,
         ...(requestConfig?.headers || {}),

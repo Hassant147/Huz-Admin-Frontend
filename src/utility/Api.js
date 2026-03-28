@@ -2,7 +2,7 @@ import axios from "axios";
 
 const resolveApiBaseURL = () => {
   const configuredURL = `${process.env.REACT_APP_API_BASE_URL || ""}`.trim();
-  const fallbackURL = "http://127.0.0.1:8000";
+  const fallbackURL = "https://hajjumrah.org";
   const normalizedBaseURL = configuredURL || fallbackURL;
   return normalizedBaseURL.replace(/\/+$/, "");
 };
