@@ -9,6 +9,11 @@ import {
   updateTransportDetails,
 } from "../../../../../../utility/Api";
 
+const getDocumentContextLabel = (document = {}) =>
+  [document.ownerLabel, document.groupLabel, document.travelerName]
+    .filter(Boolean)
+    .join(" • ");
+
 const MODE_OPTIONS = [
   { value: "none", label: "Nothing shared yet" },
   { value: "ticket_only", label: "Ticket file or reference" },
@@ -310,7 +315,12 @@ const TransportArrangementForm = ({ isEditing, booking }) => {
                     rel="noopener noreferrer"
                     className="truncate underline-offset-2 hover:underline"
                   >
-                    {document.title}
+                    <span className="block truncate">{document.title}</span>
+                    {getDocumentContextLabel(document) ? (
+                      <span className="block text-xs text-gray-500">
+                        {getDocumentContextLabel(document)}
+                      </span>
+                    ) : null}
                   </a>
                   <button
                     type="button"

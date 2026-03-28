@@ -1,27 +1,19 @@
 import React, { useState } from "react";
-import { deactivateTransportPackage, deactivatePackage } from "../utility/Api"; // Ensure the correct API import
+import { deactivatePackage } from "../utility/Api";
 import { toast } from "react-hot-toast";
 import inactive from "../assets/deactivateWhite.svg";
 import { AppButton } from "./ui";
 
-const DeactivateButton = ({ onSuccess, onError, sessionToken, transportToken, huzToken, packageType, setSelectedStatus }) => {
+const DeactivateButton = ({ onSuccess, onError, sessionToken, huzToken }) => {
   const [loading, setLoading] = useState(false);
 
   const handleDeactivateClick = async () => {
     setLoading(true);
     try {
-      let result;
-      if (packageType === "transport") {
-        result = await deactivateTransportPackage(sessionToken, transportToken, 'Deactivated');
-      } else {
-        result = await deactivatePackage(sessionToken, huzToken, 'Deactivated');
-      }
-      
+      const result = await deactivatePackage(sessionToken, huzToken, "Deactivated");
+
       toast.success("Package successfully deactivated!", { duration: 5000 }); // Show success toast for 5 seconds
       if (onSuccess) onSuccess(result);
-      if (packageType === "transport") {
-        setSelectedStatus("Deactivated"); // Update status to Deactivated if packageType is "transport"
-      }
     } catch (error) {
       console.error("Deactivation Error:", error);
       toast.error("An error occurred while deactivating the package.", { duration: 5000 }); // Show error toast for 5 seconds

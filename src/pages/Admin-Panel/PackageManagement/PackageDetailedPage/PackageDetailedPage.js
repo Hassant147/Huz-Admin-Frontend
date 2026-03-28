@@ -106,9 +106,18 @@ const DetailPage = () => {
       localStorage.setItem("completedTabs", JSON.stringify(completedTabs));
 
       if (packageDetail.package_stage < 6) {
-        navigate("/company/continue-existing-package-creation");
+        navigate(
+          `/company/continue-existing-package-creation?partnerSessionToken=${encodeURIComponent(
+            partnerSessionToken || ""
+          )}&huzToken=${encodeURIComponent(huzToken || "")}`
+        );
       } else {
-        navigate("/edit-package", { state: { packageDetail } });
+        navigate(
+          `/edit-package?partnerSessionToken=${encodeURIComponent(
+            partnerSessionToken || ""
+          )}&huzToken=${encodeURIComponent(huzToken || "")}`,
+          { state: { packageDetail } }
+        );
       }
     }
   };

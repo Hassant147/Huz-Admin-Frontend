@@ -40,7 +40,7 @@ const LoginPage = () => {
 
       if (status === 200 && data.user_type === "admin") {
         localStorage.setItem("user-data", JSON.stringify(data));
-        localStorage.setItem("isSuperAdmin", true);
+        localStorage.removeItem("isSuperAdmin");
         navigate("/super-admin-dashboard");
         return;
       }

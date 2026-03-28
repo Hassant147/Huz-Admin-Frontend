@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { AppCard, AppSectionHeader } from "../../../../components/ui";
 
-const PACKAGE_TYPES = ["Hajj", "Umrah", "Transport"];
+const PACKAGE_TYPES = ["Hajj", "Umrah"];
 
 const Sidebar = ({ onFilterChange }) => {
   const [selectedType, setSelectedType] = useState("Hajj");

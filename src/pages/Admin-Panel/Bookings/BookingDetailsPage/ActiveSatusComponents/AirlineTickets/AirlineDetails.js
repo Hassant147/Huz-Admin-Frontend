@@ -17,6 +17,11 @@ const getFileIcon = (title = "") => {
   }
 };
 
+const getDocumentContextLabel = (document = {}) =>
+  [document.ownerLabel, document.groupLabel, document.travelerName]
+    .filter(Boolean)
+    .join(" • ");
+
 const AirlineDetails = ({ booking, onDelete, canManage = true }) => {
   const navigate = useNavigate();
   const airlineCards = Array.isArray(booking?.airline_cards) ? booking.airline_cards : [];
@@ -96,7 +101,12 @@ const AirlineDetails = ({ booking, onDelete, canManage = true }) => {
                     rel="noopener noreferrer"
                     className="truncate text-sm text-gray-700 underline-offset-2 hover:underline"
                   >
-                    {document.title}
+                    <span className="block truncate">{document.title}</span>
+                    {getDocumentContextLabel(document) ? (
+                      <span className="block text-xs text-gray-500">
+                        {getDocumentContextLabel(document)}
+                      </span>
+                    ) : null}
                   </a>
                 </div>
                 {canManage && onDelete ? (

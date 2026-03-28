@@ -1,6 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import AdminPanelLayout from "../../../../components/layout/AdminPanelLayout";
+import Loader from "../../../../components/loader";
+import { AppButton, AppCard, AppEmptyState } from "../../../../components/ui";
+import errorIcon from "../../../../assets/error.svg";
+import { getPackageDetails } from "../../../../utility/Api";
 
 import BasicInfoForm from "./BasicInformationForm";
 import AirlineForm from "./AirlineForm";
@@ -19,47 +24,86 @@ const tabLabels = [
 ];
 
 const ContinueCreatedCompanyForms = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
   const [formData, setFormData] = useState({});
   const [completedTabs, setCompletedTabs] = useState(new Set());
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const partnerSessionToken = searchParams.get("partnerSessionToken");
+  const huzToken = searchParams.get("huzToken");
 
-  useEffect(() => {
-    // Fetch package details and completed tabs from local storage
-    const packageDetail = JSON.parse(localStorage.getItem("packageDetail"));
+  const hydrateFromPackageDetail = useCallback((packageDetail) => {
+    if (!packageDetail) {
+      return false;
+    }
+
     const completedTabsFromStorage = new Set(
       JSON.parse(localStorage.getItem("completedTabs")) || []
     );
+    const hotelDetails = Array.isArray(packageDetail.hotel_detail)
+      ? packageDetail.hotel_detail
+      : [];
 
-    // Update formData with packageDetail
-    if (packageDetail) {
-      setFormData({
-        "Basic Information": packageDetail.company_details,
-        Airline: packageDetail.airline_detail[0],
-        Transport: packageDetail.transport_detail[0] || {},
-        Ziyarah: packageDetail.ziyarah_detail[0] || {},
-        "Makkah Hotel":
-          packageDetail.hotel_detail.find(
-            (hotel) => hotel.hotel_city.toLowerCase() === "mecca"
-          ) || {},
-        "Madina Hotel":
-          packageDetail.hotel_detail.find(
-            (hotel) => hotel.hotel_city.toLowerCase() === "madinah"
-          ) || {},
-      });
-      localStorage.setItem("huz_token", packageDetail.huz_token);
-    }
-
-    // Update completedTabs state
+    setFormData({
+      "Basic Information": packageDetail.company_details,
+      Airline: packageDetail.airline_detail?.[0],
+      Transport: packageDetail.transport_detail?.[0] || {},
+      Ziyarah: packageDetail.ziyarah_detail?.[0] || {},
+      "Makkah Hotel":
+        hotelDetails.find((hotel) => hotel.hotel_city?.toLowerCase() === "mecca") || {},
+      "Madina Hotel":
+        hotelDetails.find((hotel) => hotel.hotel_city?.toLowerCase() === "madinah") || {},
+    });
     setCompletedTabs(completedTabsFromStorage);
+    localStorage.setItem("packageDetail", JSON.stringify(packageDetail));
+    localStorage.setItem("huz_token", packageDetail.huz_token);
 
-    // Set the active tab to the first incomplete tab
     const firstIncompleteTab = tabLabels.findIndex(
       (label) => !completedTabsFromStorage.has(label)
     );
     if (firstIncompleteTab !== -1) {
       setActiveTab(firstIncompleteTab);
     }
+    return true;
   }, []);
+
+  useEffect(() => {
+    const loadPackageContext = async () => {
+      setLoadError("");
+      const storedPackageDetail = localStorage.getItem("packageDetail");
+      if (storedPackageDetail) {
+        try {
+          if (hydrateFromPackageDetail(JSON.parse(storedPackageDetail))) {
+            setLoading(false);
+            return;
+          }
+        } catch (error) {
+          console.error("Unable to parse stored package detail:", error);
+        }
+      }
+
+      if (partnerSessionToken && huzToken) {
+        try {
+          const data = await getPackageDetails(partnerSessionToken, huzToken);
+          const packageDetail = Array.isArray(data) ? data[0] : null;
+          if (!hydrateFromPackageDetail(packageDetail)) {
+            throw new Error("Package details were not found.");
+          }
+        } catch (error) {
+          setLoadError(error.message || "Unable to load package details.");
+        }
+      } else {
+        setLoadError("Open the package from package management to continue enrollment.");
+      }
+
+      setLoading(false);
+    };
+
+    loadPackageContext();
+  }, [hydrateFromPackageDetail, huzToken, partnerSessionToken]);
 
   const handleFormDataChange = (data) => {
     setFormData({ ...formData, [tabLabels[activeTab]]: data });
@@ -145,13 +189,27 @@ const ContinueCreatedCompanyForms = () => {
       subtitle="Resume and complete the remaining package sections."
       mainClassName="py-5 bg-[#f6f6f6]"
     >
+      {loadError ? (
+        <AppCard>
+          <AppEmptyState
+            icon={<img src={errorIcon} alt="" className="h-6 w-6" />}
+            title="Package not loaded"
+            message={loadError}
+            action={
+              <AppButton size="sm" onClick={() => navigate("/packages")}>
+                Go to Packages
+              </AppButton>
+            }
+          />
+        </AppCard>
+      ) : null}
+
       <div className="lg:mt-4 mt-2 mb-10 flex-grow">
         <h3 className="text-lg font-medium mb-2 text-gray-600">
           Package Enrollment
         </h3>
         <p className="text-sm font-thin text-gray-600 mb-4">
-          Start by telling us your package type by selecting one of the
-          following:
+          Resume the next incomplete package section for this existing package.
         </p>
         <div
           className="w-full mt-6 flex overflow-x-auto no-scrollbar mb-4 space-x-1"
@@ -196,8 +254,16 @@ const ContinueCreatedCompanyForms = () => {
           })}
         </div>
 
-        <div className="w-[85%] lg:w-full mx-auto font-sans mt-10"></div>
-        <div className="w-full mx-auto">{renderTabContent()}</div>
+        {loading ? (
+          <div className="flex min-h-[320px] items-center justify-center">
+            <Loader />
+          </div>
+        ) : !loadError ? (
+          <>
+            <div className="w-[85%] lg:w-full mx-auto font-sans mt-10"></div>
+            <div className="w-full mx-auto">{renderTabContent()}</div>
+          </>
+        ) : null}
       </div>
     </AdminPanelLayout>
   );

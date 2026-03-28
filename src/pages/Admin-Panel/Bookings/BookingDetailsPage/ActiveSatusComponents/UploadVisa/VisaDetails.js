@@ -17,6 +17,11 @@ const getFileIcon = (title = "") => {
   }
 };
 
+const getDocumentContextLabel = (document = {}) =>
+  [document.ownerLabel, document.groupLabel, document.travelerName]
+    .filter(Boolean)
+    .join(" • ");
+
 const VisaDetails = ({ booking, onDelete, canManage = true }) => {
   const navigate = useNavigate();
   const documents = booking?.documents_by_category?.evisa || [];
@@ -56,7 +61,12 @@ const VisaDetails = ({ booking, onDelete, canManage = true }) => {
                   rel="noopener noreferrer"
                   className="truncate text-sm text-gray-700 underline-offset-2 hover:underline"
                 >
-                  {document.title}
+                  <span className="block truncate">{document.title}</span>
+                  {getDocumentContextLabel(document) ? (
+                    <span className="block text-xs text-gray-500">
+                      {getDocumentContextLabel(document)}
+                    </span>
+                  ) : null}
                 </a>
               </div>
               {canManage && onDelete ? (

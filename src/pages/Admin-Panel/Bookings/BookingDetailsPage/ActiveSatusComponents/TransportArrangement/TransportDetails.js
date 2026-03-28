@@ -9,6 +9,11 @@ const MODE_LABELS = {
   details_and_ticket: "Details and ticket",
 };
 
+const getDocumentContextLabel = (document = {}) =>
+  [document.ownerLabel, document.groupLabel, document.travelerName]
+    .filter(Boolean)
+    .join(" • ");
+
 const TransportDetails = ({ booking, canManage = true }) => {
   const navigate = useNavigate();
   const bookingNumber = booking?.booking_number || "";
@@ -99,7 +104,12 @@ const TransportDetails = ({ booking, canManage = true }) => {
                     rel="noopener noreferrer"
                     className="block text-[#00936C] underline-offset-2 hover:underline"
                   >
-                    {document.title}
+                    <span className="block">{document.title}</span>
+                    {getDocumentContextLabel(document) ? (
+                      <span className="block text-xs text-gray-500">
+                        {getDocumentContextLabel(document)}
+                      </span>
+                    ) : null}
                   </a>
                 ))}
               </div>

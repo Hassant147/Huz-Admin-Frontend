@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import PackageDetails from "./PackageDetails";
@@ -9,13 +9,95 @@ import CompanyDetail from "./CompanyDetail";
 import { AppButton, AppCard, AppEmptyState } from "../../../../../components/ui";
 import errorIcon from "../../../../../assets/error.svg";
 import SuperAdminModuleShell from "../../../components/SuperAdminModuleShell";
+import Loader from "../../../../../components/loader";
+import { fetchSettlementReviewBookingDetails } from "../../../../../utility/Super-Admin-Api";
+import {
+  ADMIN_DETAIL_QUERY_KEYS,
+  getAdminDetailSearchParam,
+} from "../../adminDetailRouteUtils";
 
 const BookingDetailsPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const booking = location.state?.booking;
+  const locationBooking = location.state?.booking || null;
+  const bookingNumber = useMemo(
+    () =>
+      locationBooking?.booking_number ||
+      getAdminDetailSearchParam(location.search, ADMIN_DETAIL_QUERY_KEYS.bookingNumber),
+    [location.search, locationBooking?.booking_number]
+  );
+  const partnerSessionToken = useMemo(
+    () =>
+      locationBooking?.partner_session_token ||
+      getAdminDetailSearchParam(location.search, ADMIN_DETAIL_QUERY_KEYS.partnerSessionToken),
+    [location.search, locationBooking?.partner_session_token]
+  );
 
-  if (!booking) {
+  const [booking, setBooking] = useState(locationBooking);
+  const [loading, setLoading] = useState(!locationBooking && Boolean(bookingNumber));
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (locationBooking) {
+      setBooking(locationBooking);
+      setLoading(false);
+      setError("");
+      return;
+    }
+
+    if (!bookingNumber || !partnerSessionToken) {
+      setBooking(null);
+      setLoading(false);
+      setError("Booking link is missing the booking number or partner session token.");
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadBooking = async () => {
+      setLoading(true);
+      setError("");
+
+      const { status, data, error: requestError } = await fetchSettlementReviewBookingDetails(
+        partnerSessionToken,
+        bookingNumber
+      );
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (status === 200 && data) {
+        setBooking(data);
+      } else {
+        setBooking(null);
+        setError(requestError || "Unable to load booking details.");
+      }
+
+      setLoading(false);
+    };
+
+    loadBooking();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [bookingNumber, locationBooking, partnerSessionToken]);
+
+  if (loading) {
+    return (
+      <SuperAdminModuleShell
+        title="Booking Details"
+        subtitle="Review payment evidence and booking detail records."
+      >
+        <AppCard className="min-h-[320px] flex items-center justify-center">
+          <Loader />
+        </AppCard>
+      </SuperAdminModuleShell>
+    );
+  }
+
+  if (!booking || error) {
     return (
       <SuperAdminModuleShell
         title="Booking Details"
@@ -25,7 +107,7 @@ const BookingDetailsPage = () => {
           <AppEmptyState
             icon={<img src={errorIcon} alt="" className="h-6 w-6" />}
             title="Booking record not loaded"
-            message="Open a booking from the approve amounts list to continue."
+            message={error || "Open a booking from the approve amounts list to continue."}
             action={
               <AppButton size="sm" onClick={() => navigate("/approve-amounts")}>
                 Go to Approve Amounts

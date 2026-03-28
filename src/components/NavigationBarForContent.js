@@ -10,6 +10,7 @@ import packageIcon from "../assets/layout-sidebar.svg";
 import starIcon from "../assets/star.svg";
 import mapPinIcon from "../assets/map-pin.svg";
 import { AppContainer } from "./ui";
+import { isAdminSessionActive } from "../utility/adminSession";
 
 const NAV_ITEMS = [
   { to: "/partner-dashboard", label: "Dashboard", icon: dashboardIcon },
@@ -28,8 +29,8 @@ const navLinkClass = ({ isActive }) =>
   ].join(" ");
 
 const NavigationBar = () => {
-  const isSuperAdmin = Boolean(localStorage.getItem("isSuperAdmin"));
-  const visibleItems = NAV_ITEMS.filter((item) => !item.adminOnly || isSuperAdmin);
+  const isAdmin = isAdminSessionActive();
+  const visibleItems = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <nav className="app-nav-shell">

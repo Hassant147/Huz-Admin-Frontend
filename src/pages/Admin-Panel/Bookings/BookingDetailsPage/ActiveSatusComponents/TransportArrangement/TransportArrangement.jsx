@@ -42,7 +42,7 @@ const TransportArrangement = () => {
               Booking detail
             </h1>
             <p className="font-k2d font-light text-sm text-gray-500">
-              Start by telling us your package type by selecting one of the following:
+              Manage the traveler-facing transport share for this booking.
             </p>
           </div>
         </div>

@@ -41,7 +41,7 @@ const UploadEvisa = () => {
               Booking detail
             </h1>
             <p className="font-k2d font-light text-sm text-gray-500">
-              Start by telling us your package type by selecting one of the following:
+              Upload and review traveler-facing eVisa documents for this booking.
             </p>
           </div>
         </div>

@@ -14,6 +14,7 @@ import {
   getInitial,
   withFallback,
 } from "../../components/superAdminFormatters";
+import { buildAdminProfileApprovalPath } from "../adminDetailRouteUtils";
 
 const ITEMS_PER_PAGE = 6;
 
@@ -143,7 +144,11 @@ const PendingProfilePage = () => {
                       <span className="app-status-pill">{company.account_status || "Pending"}</span>
                       <AppButton
                         size="sm"
-                        onClick={() => navigate("/profile-approval", { state: { company } })}
+                        onClick={() =>
+                          navigate(buildAdminProfileApprovalPath(company.partner_session_token), {
+                            state: { company },
+                          })
+                        }
                       >
                         Review
                       </AppButton>

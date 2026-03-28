@@ -19,7 +19,8 @@ const UploadVisa = ({ isEditing, booking }) => {
       const existingFiles = (booking.documents_by_category?.evisa || [])
         .map(doc => ({
           file: new File([], doc.title || doc.href.split('/').pop()),
-          previewUrl: doc.href || `${REACT_APP_API_BASE_URL}${doc.document_link}`
+          previewUrl: doc.href || `${REACT_APP_API_BASE_URL}${doc.document_link}`,
+          ownerLabel: doc.ownerLabel || doc.groupLabel || doc.travelerName || "",
         }));
       setSelectedFiles(existingFiles);
     } else {
@@ -130,7 +131,7 @@ const UploadVisa = ({ isEditing, booking }) => {
             </p>
           </div>
           <div className="w-full overflow-y-auto max-h-80 rounded-lg p-2 space-y-2">
-            {selectedFiles.map(({ file, previewUrl }) => (
+            {selectedFiles.map(({ file, previewUrl, ownerLabel }) => (
               <div key={file.name} className="flex items-center justify-between py-2 px-4 bg-gray-100 rounded-lg">
                 <div className="flex items-center space-x-2">
                   {file.type.startsWith('image/') && (
@@ -138,6 +139,9 @@ const UploadVisa = ({ isEditing, booking }) => {
                   )}
                   <div>
                     <p className="text-sm font-medium text-gray-700">{file.name}</p>
+                    {ownerLabel ? (
+                      <p className="text-xs text-gray-500">{ownerLabel}</p>
+                    ) : null}
                     <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(2)} KB</p>
                   </div>
                 </div>

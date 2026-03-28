@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "./DetailProfileComponents/Sidebar";
 import CompanyInfoCard from "./DetailProfileComponents/CompanyInfoCard";
@@ -6,13 +6,96 @@ import ActionSection from "./DetailProfileComponents/ActionSection";
 import { AppButton, AppCard, AppEmptyState } from "../../../../components/ui";
 import errorIcon from "../../../../assets/error.svg";
 import SuperAdminModuleShell from "../../components/SuperAdminModuleShell";
+import Loader from "../../../../components/loader";
+import { fetchPendingCompanies } from "../../../../utility/Super-Admin-Api";
+import {
+  ADMIN_DETAIL_QUERY_KEYS,
+  getAdminDetailSearchParam,
+} from "../adminDetailRouteUtils";
 
 const ProfileApprovalPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const company = location.state?.company;
+  const locationCompany = location.state?.company || null;
+  const partnerSessionToken = useMemo(
+    () =>
+      locationCompany?.partner_session_token ||
+      getAdminDetailSearchParam(location.search, ADMIN_DETAIL_QUERY_KEYS.partnerSessionToken),
+    [location.search, locationCompany?.partner_session_token]
+  );
 
-  if (!company) {
+  const [company, setCompany] = useState(locationCompany);
+  const [loading, setLoading] = useState(!locationCompany && Boolean(partnerSessionToken));
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (locationCompany) {
+      setCompany(locationCompany);
+      setLoading(false);
+      setError("");
+      return;
+    }
+
+    if (!partnerSessionToken) {
+      setCompany(null);
+      setLoading(false);
+      setError("");
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadCompany = async () => {
+      setLoading(true);
+      setError("");
+
+      const { status, data, error: requestError } = await fetchPendingCompanies();
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (status === 200 && Array.isArray(data)) {
+        const matchedCompany = data.find(
+          (item) => `${item.partner_session_token || ""}` === `${partnerSessionToken || ""}`
+        );
+
+        setCompany(matchedCompany || null);
+        if (!matchedCompany) {
+          setError("This profile link did not resolve to a pending company.");
+        }
+      } else if (status === 404) {
+        setCompany(null);
+        setError("No pending companies were found.");
+      } else {
+        setCompany(null);
+        setError(requestError || "An error occurred while fetching data.");
+      }
+
+      setLoading(false);
+    };
+
+    loadCompany();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [locationCompany, partnerSessionToken]);
+
+  if (loading) {
+    return (
+      <SuperAdminModuleShell
+        title="Profile Approval"
+        subtitle="Review profile details and decide approval."
+      >
+        <AppCard className="min-h-[320px] flex items-center justify-center">
+          <Loader />
+        </AppCard>
+      </SuperAdminModuleShell>
+    );
+  }
+
+  if (!company || error) {
     return (
       <SuperAdminModuleShell
         title="Profile Approval"
@@ -22,7 +105,7 @@ const ProfileApprovalPage = () => {
           <AppEmptyState
             icon={<img src={errorIcon} alt="" className="h-6 w-6" />}
             title="Profile not loaded"
-            message="Open a profile from the pending profiles list to continue."
+            message={error || "Open a profile from the pending profiles list to continue."}
             action={
               <AppButton
                 size="sm"

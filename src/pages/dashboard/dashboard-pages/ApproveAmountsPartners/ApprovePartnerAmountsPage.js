@@ -13,6 +13,7 @@ import {
   formatDate,
   withFallback,
 } from "../../components/superAdminFormatters";
+import { buildAdminBookingDetailsPathWithSearch } from "../adminDetailRouteUtils";
 
 const ITEMS_PER_PAGE = 6;
 
@@ -159,7 +160,13 @@ const ApprovePartnerAmountsPage = () => {
                     <AppButton
                       size="sm"
                       onClick={() =>
-                        navigate("/booking-details-for-partners", { state: { booking } })
+                        navigate(
+                          buildAdminBookingDetailsPathWithSearch("/booking-details-for-partners", {
+                            bookingNumber: booking.booking_number,
+                            partnerSessionToken: booking.partner_session_token,
+                          }),
+                          { state: { booking } }
+                        )
                       }
                     >
                       Review

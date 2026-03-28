@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import "./Packagetype.css";
 import AdminPanelLayout from "../../../../components/layout/AdminPanelLayout";
 import { resetFormAndTab } from "../../../../utility/formUtils"; // Import the utility function
@@ -7,6 +7,7 @@ import { BiErrorAlt } from "react-icons/bi";
 
 const PackageType = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedService, setSelectedService] = useState("");
   const [error, setError] = useState("");
   const [partnerType, setPartnerType] = useState("");
@@ -37,10 +38,6 @@ const PackageType = () => {
       );
       resetFormAndTab(); // Call the utility function to reset form and tab state
       navigate("/company/package-creation");
-    } else if (selectedService === "transport") {
-      localStorage.setItem("selectedService", "transport");
-      resetFormAndTab();
-      navigate("/individual/package-creation");
     }
   };
 
@@ -59,6 +56,12 @@ const PackageType = () => {
             Start to enroll your package by the selection of your package type
             in the followings.{" "}
           </p>
+
+          {location.state?.unsupportedPackageType === "transport" ? (
+            <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Transport-only package enrollment is no longer supported. Add transport inside a Hajj or Umrah package instead.
+            </div>
+          ) : null}
 
           <div className="flex flex-col mb-4 text-sm font-normal text-gray-500 lg:w-[455px]">
             {partnerType === "Company" && (
@@ -95,21 +98,6 @@ const PackageType = () => {
                 </label>
               </>
             )}
-            <label
-              key="transport"
-              className="mb-2 flex items-center border bg-white rounded-md p-3 custom-checkbox"
-            >
-              <input
-                type="radio"
-                name="service"
-                value="transport"
-                checked={selectedService === "transport"}
-                onChange={handleRadioChange}
-                className="hidden"
-              />
-              <span className="checkmark"></span>
-              Transport Packages
-            </label>
           </div>
 
           {error && (

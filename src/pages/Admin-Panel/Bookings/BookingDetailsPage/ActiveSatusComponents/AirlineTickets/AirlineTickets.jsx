@@ -41,7 +41,7 @@ const AirlineTickets = () => {
               Booking detail
             </h1>
             <p className="font-k2d font-light text-sm text-gray-500">
-              Start by telling us your package type by selecting one of the following:
+              Manage flight segments and airline documents shared with the traveler.
             </p>
           </div>
         </div>

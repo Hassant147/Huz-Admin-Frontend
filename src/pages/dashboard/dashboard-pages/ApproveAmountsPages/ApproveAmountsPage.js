@@ -15,6 +15,7 @@ import {
   getReviewStageLabel,
   PAYMENT_REVIEW_TABS,
 } from "./bookingReviewUtils";
+import { buildAdminBookingDetailsPathWithSearch } from "../adminDetailRouteUtils";
 
 const ITEMS_PER_PAGE = 6;
 
@@ -242,7 +243,15 @@ const ApproveAmountsPage = () => {
                           </span>
                           <AppButton
                             size="sm"
-                            onClick={() => navigate("/booking-details", { state: { booking } })}
+                            onClick={() =>
+                              navigate(
+                                buildAdminBookingDetailsPathWithSearch("/booking-details", {
+                                  bookingNumber: booking.booking_number,
+                                  partnerSessionToken: booking.partner_session_token,
+                                }),
+                                { state: { booking } }
+                              )
+                            }
                           >
                             Review
                           </AppButton>

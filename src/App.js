@@ -16,6 +16,7 @@ import {
   buildAdminBookingSubflowPath,
   parseAdminBookingNumberFromSearch,
 } from "./pages/Admin-Panel/Bookings/bookingRouteUtils";
+import { isAdminSessionActive } from "./utility/adminSession";
 
 const LoginPage = lazy(() => import("./pages/login/login"));
 
@@ -35,7 +36,6 @@ const PackageDetails = lazy(() => import("./pages/Admin-Panel/PackageManagement/
 const EditPackagePage = lazy(() => import("./pages/Admin-Panel/PackageManagement/EditCompanyPackageForms/EditPackagePage"));
 const ContinueCreatedCompanyForms = lazy(() => import("./pages/Admin-Panel/PackageManagement/ContinueCreatedCompanyForms/ContinueCreatedCompanyForms"));
 const PackageManagement = lazy(() => import("./pages/Admin-Panel/PackageManagement/PackagesList/PackageManagement"));
-const IndTransportForm = lazy(() => import("./pages/Admin-Panel/PackageManagement/CreateIndividualPackageForm/TransportForm"));
 const Profile = lazy(() => import("./pages/Admin-Panel/ProfilePage/Profile"));
 const Bookings = lazy(() => import("./pages/Admin-Panel/Bookings/Bookings"));
 const BookingDetails = lazy(() => import("./pages/Admin-Panel/Bookings/BookingDetailsPage/BookingDetails"));
@@ -79,8 +79,6 @@ const getUserStatus = () => {
     return { isLoggedIn: false };
   }
 };
-
-const isSuperAdminLoggedIn = () => Boolean(localStorage.getItem("isSuperAdmin"));
 
 const resolveLegacyBookingNumber = (location) =>
   location?.state?.bookingNumber || parseAdminBookingNumberFromSearch(location?.search);
@@ -127,8 +125,16 @@ const LegacyHotelArrangementRedirect = () => (
   <LegacyBookingSubflowRedirect flow="hotel-arrangement" />
 );
 
+const LegacyTransportPackageRedirect = () => (
+  <Navigate
+    to="/package-type"
+    replace
+    state={{ unsupportedPackageType: "transport" }}
+  />
+);
+
 const SuperAdminProtectedRoute = ({ element }) => {
-  if (isSuperAdminLoggedIn()) {
+  if (isAdminSessionActive()) {
     return element;
   }
 
@@ -138,7 +144,7 @@ const SuperAdminProtectedRoute = ({ element }) => {
 const PartnerPanelProtectedRoute = ({ element }) => {
   const { isLoggedIn, isEmailVerified, partnerType, accountStatus } = getUserStatus();
 
-  if (isSuperAdminLoggedIn()) {
+  if (isAdminSessionActive()) {
     return <Navigate to="/super-admin-dashboard" replace />;
   }
 
@@ -150,7 +156,7 @@ const PartnerPanelProtectedRoute = ({ element }) => {
 };
 
 const LoginRedirectRoute = ({ element }) => {
-  return isSuperAdminLoggedIn() ? <Navigate to="/super-admin-dashboard" replace /> : element;
+  return isAdminSessionActive() ? <Navigate to="/super-admin-dashboard" replace /> : element;
 };
 
 const SUPER_ADMIN_ROUTES = [
@@ -226,7 +232,7 @@ const PARTNER_ROUTES = [
   { path: "/company/package-creation", Component: CreatePackagePage },
   { path: "/packagedetails", Component: PackageDetails },
   { path: "/packages", Component: PackageManagement },
-  { path: "/individual/package-creation", Component: IndTransportForm },
+  { path: "/individual/package-creation", Component: LegacyTransportPackageRedirect },
   { path: "/edit-package", Component: EditPackagePage, props: { isEditing: true } },
   { path: "/company/continue-existing-package-creation", Component: ContinueCreatedCompanyForms },
   { path: "/profile", Component: Profile },

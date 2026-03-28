@@ -57,6 +57,8 @@ const BookingDetailsContent = ({ booking, loading, error }) => {
         return <ViewOnly booking={booking} />;
       case "READY":
         return <Pending booking={booking} />;
+      case "REPORTED":
+        return <Objection booking={booking} />;
       case "ISSUE":
         return <Objection booking={booking} />;
       case "FULFILLMENT":

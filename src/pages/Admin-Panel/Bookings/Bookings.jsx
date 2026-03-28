@@ -6,7 +6,7 @@ const Bookings = () => {
   return (
     <AdminPanelLayout
       title="Bookings"
-      subtitle="Review view-only, ready, in-fulfillment, issue, completed, and history queues from one place."
+      subtitle="Review view-only, ready, fulfillment, reported, operator objection, completed, and history queues from one place."
       contentClassName="pb-6"
     >
       <Tabs />

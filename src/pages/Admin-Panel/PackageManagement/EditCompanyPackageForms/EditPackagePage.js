@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Loader from "../../../../components/loader";
 
 import AdminPanelLayout from "../../../../components/layout/AdminPanelLayout";
+import { AppButton, AppCard, AppEmptyState } from "../../../../components/ui";
+import errorIcon from "../../../../assets/error.svg";
+import { getPackageDetails } from "../../../../utility/Api";
 
 import BasicInfoForm from "./BasicInformationForm";
 import AirlineForm from "./AirlineForm";
@@ -22,23 +25,55 @@ const tabLabels = [
 
 const EditPackagePage = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
   const [formData, setFormData] = useState({});
   const [completedTabs, setCompletedTabs] = useState(new Set());
   const [loading, setLoading] = useState(true);
-  const isEditing = !!location.state?.packageDetail;
+  const [loadError, setLoadError] = useState("");
+  const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const partnerSessionToken = searchParams.get("partnerSessionToken");
+  const huzToken = searchParams.get("huzToken");
+  const isEditing = Boolean(
+    location.state?.packageDetail || localStorage.getItem("packageDetail") || huzToken
+  );
 
-  const loadFormData = () => {
+  const loadFormData = useCallback(async () => {
+    setLoadError("");
     const storedPackageDetail = localStorage.getItem("packageDetail");
     if (storedPackageDetail) {
-      setFormData(JSON.parse(storedPackageDetail));
+      try {
+        setFormData(JSON.parse(storedPackageDetail));
+        setLoading(false);
+        return;
+      } catch (error) {
+        console.error("Unable to parse stored package detail:", error);
+      }
     }
-    setLoading(false); // Data is loaded, set loading to false
-  };
+
+    if (partnerSessionToken && huzToken) {
+      try {
+        const data = await getPackageDetails(partnerSessionToken, huzToken);
+        const packageDetail = Array.isArray(data) ? data[0] : null;
+        if (!packageDetail) {
+          throw new Error("Package details were not found.");
+        }
+
+        setFormData(packageDetail);
+        localStorage.setItem("packageDetail", JSON.stringify(packageDetail));
+      } catch (error) {
+        setLoadError(error.message || "Unable to load package details.");
+      }
+    } else {
+      setLoadError("Open the package from package management to continue editing.");
+    }
+
+    setLoading(false);
+  }, [huzToken, partnerSessionToken]);
 
   useEffect(() => {
     loadFormData();
-  }, [activeTab]);
+  }, [loadFormData]);
 
   const handleFormDataChange = (data) => {
     const updatedFormData = { ...formData, [tabLabels[activeTab]]: data };
@@ -127,6 +162,21 @@ const EditPackagePage = () => {
       subtitle="Update package sections and continue to the next step."
       mainClassName="py-5 bg-[#f6f6f6]"
     >
+      {loadError ? (
+        <AppCard>
+          <AppEmptyState
+            icon={<img src={errorIcon} alt="" className="h-6 w-6" />}
+            title="Package not loaded"
+            message={loadError}
+            action={
+              <AppButton size="sm" onClick={() => navigate("/packages")}>
+                Go to Packages
+              </AppButton>
+            }
+          />
+        </AppCard>
+      ) : null}
+
       <div className="mt-2 mb-10 flex-grow">
         <h3 className="text-lg font-medium mb-2 text-gray-600">
           {isEditing ? "Edit Package" : "Package Enrollment"}
@@ -195,9 +245,9 @@ const EditPackagePage = () => {
               size={30}
             />
           </div>
-        ) : (
+        ) : !loadError ? (
           <div className="w-full mx-auto">{renderTabContent()}</div>
-        )}
+        ) : null}
       </div>
     </AdminPanelLayout>
   );
