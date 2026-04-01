@@ -25,6 +25,11 @@ let currentAdminSessionState = {
   message: "",
 };
 let unauthorizedHandler = null;
+const ADMIN_AUTH_FORBIDDEN_MESSAGES = new Set([
+  "admin access required.",
+  "authentication credentials were not provided.",
+  "not authenticated.",
+]);
 
 const syncSessionSnapshot = (nextState) => {
   currentAdminSessionState = nextState;
@@ -61,6 +66,32 @@ const normalizeAuthMessage = (payload, fallbackMessage) => {
   return fallbackMessage;
 };
 
+const extractAdminErrorMessage = (payload) => {
+  const message = `${payload?.message || payload?.detail || ""}`.trim();
+  return message;
+};
+
+const shouldResetAdminSession = (status, payload) => {
+  if (status === 401) {
+    return true;
+  }
+
+  if (status !== 403) {
+    return false;
+  }
+
+  const normalizedMessage = extractAdminErrorMessage(payload).toLowerCase();
+  if (!normalizedMessage) {
+    return false;
+  }
+
+  if (normalizedMessage.startsWith("csrf failed:")) {
+    return false;
+  }
+
+  return ADMIN_AUTH_FORBIDDEN_MESSAGES.has(normalizedMessage);
+};
+
 export const clearAdminSession = () => {
   if (typeof window === "undefined") {
     return;
@@ -82,8 +113,9 @@ export const setAdminUnauthorizedHandler = (handler) => {
 export const handleAdminUnauthorizedResponse = (error) => {
   const status = error?.response?.status;
   const requestUrl = `${error?.config?.url || ""}`;
+  const payload = error?.response?.data;
 
-  if (![401, 403].includes(status) || !requestUrl.startsWith("/management/")) {
+  if (!shouldResetAdminSession(status, payload) || !requestUrl.startsWith("/management/")) {
     return Promise.reject(error);
   }
 

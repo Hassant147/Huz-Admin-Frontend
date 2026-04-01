@@ -13,7 +13,12 @@ vi.mock("./apiConfig", () => ({
   createApiClient: () => apiClient,
 }));
 
-import { AdminAuthProvider, useAdminAuth } from "./adminSession";
+import {
+  AdminAuthProvider,
+  handleAdminUnauthorizedResponse,
+  setAdminUnauthorizedHandler,
+  useAdminAuth,
+} from "./adminSession";
 
 const SessionProbe = () => {
   const { isLoading, isAuthenticated, message } = useAdminAuth();
@@ -32,6 +37,7 @@ describe("AdminAuthProvider", () => {
     apiClient.get.mockReset();
     apiClient.post.mockReset();
     window.localStorage.clear();
+    setAdminUnauthorizedHandler(null);
     vi.restoreAllMocks();
   });
 
@@ -96,5 +102,51 @@ describe("AdminAuthProvider", () => {
     expect(screen.getByTestId("auth-state").textContent).toBe("authenticated");
     expect(screen.getByTestId("auth-message").textContent).toBe("");
     expect(getItemSpy).not.toHaveBeenCalledWith("SignedUp-User-Profile");
+  });
+
+  it("does not clear the admin session for csrf-specific 403 responses", async () => {
+    const unauthorizedSpy = vi.fn();
+    const error = {
+      response: {
+        status: 403,
+        data: {
+          detail: "CSRF Failed: CSRF token missing.",
+        },
+      },
+      config: {
+        url: "/management/approved_or_reject_company/",
+      },
+    };
+
+    window.localStorage.setItem("user-data", JSON.stringify({ username: "admin" }));
+    setAdminUnauthorizedHandler(unauthorizedSpy);
+
+    await expect(handleAdminUnauthorizedResponse(error)).rejects.toBe(error);
+
+    expect(window.localStorage.getItem("user-data")).toBeTruthy();
+    expect(unauthorizedSpy).not.toHaveBeenCalled();
+  });
+
+  it("clears the admin session for auth-related 403 responses", async () => {
+    const unauthorizedSpy = vi.fn();
+    const error = {
+      response: {
+        status: 403,
+        data: {
+          message: "Admin access required.",
+        },
+      },
+      config: {
+        url: "/management/fetch_all_pending_companies/",
+      },
+    };
+
+    window.localStorage.setItem("user-data", JSON.stringify({ username: "admin" }));
+    setAdminUnauthorizedHandler(unauthorizedSpy);
+
+    await expect(handleAdminUnauthorizedResponse(error)).rejects.toBe(error);
+
+    expect(window.localStorage.getItem("user-data")).toBeNull();
+    expect(unauthorizedSpy).toHaveBeenCalledTimes(1);
   });
 });
