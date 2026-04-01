@@ -5,7 +5,7 @@ import icon2 from '../../../../assets/progressdashboardicon.svg';
 import { fetchPackageStatistics } from '../../../../utility/Api';
 import Loader from '../../../../components/loader'; // Assuming your loader is here
 import { AppCard } from "../../../../components/ui";
-import { getPartnerSessionToken } from "../../../../utility/session";
+import { getPartnerSessionToken } from "../../../../utility/partnerSession";
 
 const DashboardStats = () => {
   const [packagesData, setPackagesData] = useState([]);

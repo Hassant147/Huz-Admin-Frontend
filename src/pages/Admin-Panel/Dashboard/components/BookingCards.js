@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchBookingStatistics } from '../../../../utility/Api';
 import { AppCard } from "../../../../components/ui";
-import { getPartnerSessionToken } from "../../../../utility/session";
+import { getPartnerSessionToken } from "../../../../utility/partnerSession";
 
 const BOOKING_STAT_CARDS = [
     { key: "HOLD", label: "Hold", tone: "text-[#B54708]" },

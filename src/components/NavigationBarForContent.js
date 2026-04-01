@@ -7,19 +7,28 @@ import dollarIcon from "../assets/coin.svg";
 import dashboardIcon from "../assets/dashboardicon.png";
 import complaintsIcon from "../assets/enroll.svg";
 import packageIcon from "../assets/layout-sidebar.svg";
+import profileIcon from "../assets/profile.svg";
 import starIcon from "../assets/star.svg";
 import mapPinIcon from "../assets/map-pin.svg";
 import { AppContainer } from "./ui";
-import { isAdminSessionActive } from "../utility/adminSession";
+import { useAdminAuth } from "../utility/adminSession";
 
-const NAV_ITEMS = [
+const PARTNER_NAV_ITEMS = [
   { to: "/partner-dashboard", label: "Dashboard", icon: dashboardIcon },
   { to: "/packages", label: "Package Management", icon: packageIcon },
-  { to: "/hotel-catalog", label: "Hotel Catalog", icon: mapPinIcon, adminOnly: true },
   { to: "/booking", label: "Bookings", icon: booking },
   { to: "/wallet", label: "Wallet", icon: dollarIcon },
   { to: "/complaints", label: "Complaints", icon: complaintsIcon },
   { to: "/reviews-ratings", label: "Review & Ratings", icon: starIcon },
+];
+
+const ADMIN_NAV_ITEMS = [
+  { to: "/super-admin-dashboard", label: "Dashboard", icon: dashboardIcon },
+  { to: "/pending-profiles", label: "Pending Profiles", icon: profileIcon },
+  { to: "/approve-amounts", label: "Approve Amounts", icon: dollarIcon },
+  { to: "/approve-partners-amounts", label: "Partner Amounts", icon: packageIcon },
+  { to: "/hotel-catalog", label: "Hotel Catalog", icon: mapPinIcon },
+  { to: "/profile", label: "My Profile", icon: profileIcon },
 ];
 
 const navLinkClass = ({ isActive }) =>
@@ -29,8 +38,8 @@ const navLinkClass = ({ isActive }) =>
   ].join(" ");
 
 const NavigationBar = () => {
-  const isAdmin = isAdminSessionActive();
-  const visibleItems = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin);
+  const { isAuthenticated } = useAdminAuth();
+  const visibleItems = isAuthenticated ? ADMIN_NAV_ITEMS : PARTNER_NAV_ITEMS;
 
   return (
     <nav className="app-nav-shell">

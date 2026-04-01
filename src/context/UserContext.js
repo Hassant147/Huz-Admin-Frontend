@@ -1,14 +1,20 @@
 import React, { createContext, useState, useEffect } from "react";
+import { getStoredPartnerProfile } from "../utility/partnerSession";
 
-export const UserContext = createContext();
+const defaultUserContextValue = {
+  userData: {},
+  updateUserProfile: () => {},
+};
+
+export const UserContext = createContext(defaultUserContextValue);
 
 export const UserProvider = ({ children }) => {
   const [userData, setUserData] = useState({});
 
   useEffect(() => {
-    const storedUserData = localStorage.getItem("SignedUp-User-Profile");
+    const storedUserData = getStoredPartnerProfile();
     if (storedUserData) {
-      setUserData(JSON.parse(storedUserData));
+      setUserData(storedUserData);
     }
   }, []);
 

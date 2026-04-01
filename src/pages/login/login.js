@@ -1,57 +1,54 @@
 import React, { useState } from "react";
 import { BiErrorAlt } from "react-icons/bi";
-import PhoneInput from "react-phone-number-input";
-import "react-phone-number-input/style.css";
 import { useNavigate } from "react-router-dom";
 import FooterForSignup from "../../components/Footers/FooterForSingup";
 import Loader from "../../components/loader";
 import { AppButton, AppContainer } from "../../components/ui";
 import bgimg from "../../assets/bgImage.png";
-import { checkUserExistence } from "../../utility/Super-Admin-Api";
-import {
-  getPakistanLocalDigits,
-  getPakistanPhoneInputState,
-  validatePhoneNumberForLogin,
-} from "../../utility/phoneValidation";
+import { useAdminAuth } from "../../utility/adminSession";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const [value, setValue] = useState("");
-  const [errors, setErrors] = useState({ phoneNumber: "" });
+  const { login } = useAdminAuth();
+  const [formValues, setFormValues] = useState({
+    username: "",
+    password: "",
+  });
+  const [errors, setErrors] = useState({ username: "", password: "" });
   const [apiError, setApiError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setErrors({ phoneNumber: "" });
+
+    const nextErrors = {
+      username: formValues.username.trim() ? "" : "Username is required.",
+      password: formValues.password ? "" : "Password is required.",
+    };
+
+    setErrors(nextErrors);
     setApiError("");
-    setIsLoading(true);
 
-    const phoneValidation = validatePhoneNumberForLogin(value);
-
-    if (!phoneValidation.isValid) {
-      setErrors({ phoneNumber: phoneValidation.error });
-      setIsLoading(false);
+    if (nextErrors.username || nextErrors.password) {
       return;
     }
 
-    try {
-      const { status, data } = await checkUserExistence(phoneValidation.normalizedPhoneNumber);
+    setIsLoading(true);
 
-      if (status === 200 && data.user_type === "admin") {
-        localStorage.setItem("user-data", JSON.stringify(data));
-        localStorage.removeItem("isSuperAdmin");
-        navigate("/super-admin-dashboard");
+    try {
+      const result = await login({
+        username: formValues.username,
+        password: formValues.password,
+      });
+
+      if (result.ok) {
+        navigate("/super-admin-dashboard", { replace: true });
         return;
       }
 
-      if (status === 200 && data.user_type !== "admin") {
-        setApiError("This account is not authorized for admin access.");
-      } else if (status === 404) {
-        setApiError("User does not exist.");
-      }
+      setApiError(result.message || "Unable to sign in.");
     } catch (error) {
-      setApiError("An error occurred while checking the user.");
+      setApiError("Unable to reach the admin auth service.");
     } finally {
       setIsLoading(false);
     }
@@ -72,68 +69,68 @@ const LoginPage = () => {
           <div className="max-w-md mx-auto app-card px-6 py-10 md:px-8">
             <h2 className="text-xl font-semibold text-ink-900 text-center">Admin sign in</h2>
             <p className="mt-2 mb-6 text-sm text-ink-500 text-center">
-              Continue with your registered admin phone number.
+              Use your backend-managed admin credentials to continue.
             </p>
 
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
-                <label htmlFor="phoneNumber" className="block text-sm font-semibold text-ink-700 mb-1.5">
-                  Phone Number
+                <label htmlFor="username" className="block text-sm font-semibold text-ink-700 mb-1.5">
+                  Username
                 </label>
-                <PhoneInput
-                  placeholder="Enter phone number"
-                  value={value}
-                  onChange={(phoneNumberValue) => {
-                    const phoneInputState = getPakistanPhoneInputState(phoneNumberValue || "");
-
-                    if (!phoneInputState.isAllowed) {
-                      setValue(phoneInputState.normalizedPhoneNumber || value || "");
-                      setErrors({ phoneNumber: phoneInputState.error });
-                      return;
-                    }
-
-                    setValue(phoneInputState.normalizedPhoneNumber);
-                    if (errors.phoneNumber || apiError) {
-                      setErrors({ phoneNumber: "" });
+                <input
+                  id="username"
+                  type="text"
+                  autoComplete="username"
+                  value={formValues.username}
+                  onChange={(event) => {
+                    setFormValues((currentValues) => ({
+                      ...currentValues,
+                      username: event.target.value,
+                    }));
+                    if (errors.username || apiError) {
+                      setErrors((currentErrors) => ({
+                        ...currentErrors,
+                        username: "",
+                      }));
                       setApiError("");
                     }
                   }}
-                  defaultCountry="PK"
-                  country="PK"
-                  international={false}
-                  countryCallingCodeEditable={false}
-                  numberInputProps={{
-                    inputMode: "numeric",
-                    pattern: "[0-9]*",
-                    onKeyDown: (event) => {
-                      const allowedKeys = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Home", "End"];
-
-                      if (allowedKeys.includes(event.key)) {
-                        return;
-                      }
-
-                      if (!/^\d$/.test(event.key)) {
-                        event.preventDefault();
-                        return;
-                      }
-
-                      const localDigits = getPakistanLocalDigits(value);
-
-                      if (localDigits.length === 0 && event.key === "0") {
-                        event.preventDefault();
-                        setErrors({ phoneNumber: "Do not start number with 0 after +92" });
-                        return;
-                      }
-
-                      if (localDigits.length >= 10) {
-                        event.preventDefault();
-                        setErrors({ phoneNumber: "Pakistan mobile number cannot exceed 10 digits" });
-                      }
-                    },
-                  }}
-                  className={`mt-1 block w-full ${errors.phoneNumber ? "border-red-500" : ""}`}
+                  className={`mt-1 block w-full rounded-xl border bg-white px-4 py-3 text-sm text-ink-900 shadow-sm outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100 ${
+                    errors.username ? "border-red-500" : "border-slate-200"
+                  }`}
+                  placeholder="Enter your admin username"
                 />
-                {errors.phoneNumber ? <p className="mt-2 text-sm text-red-600">{errors.phoneNumber}</p> : null}
+                {errors.username ? <p className="mt-2 text-sm text-red-600">{errors.username}</p> : null}
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="password" className="block text-sm font-semibold text-ink-700 mb-1.5">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={formValues.password}
+                  onChange={(event) => {
+                    setFormValues((currentValues) => ({
+                      ...currentValues,
+                      password: event.target.value,
+                    }));
+                    if (errors.password || apiError) {
+                      setErrors((currentErrors) => ({
+                        ...currentErrors,
+                        password: "",
+                      }));
+                      setApiError("");
+                    }
+                  }}
+                  className={`mt-1 block w-full rounded-xl border bg-white px-4 py-3 text-sm text-ink-900 shadow-sm outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100 ${
+                    errors.password ? "border-red-500" : "border-slate-200"
+                  }`}
+                  placeholder="Enter your password"
+                />
+                {errors.password ? <p className="mt-2 text-sm text-red-600">{errors.password}</p> : null}
               </div>
 
               {apiError ? (

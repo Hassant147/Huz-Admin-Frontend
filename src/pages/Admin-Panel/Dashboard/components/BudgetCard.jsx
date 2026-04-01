@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { fetchYearlyEarningStatistics } from "../../../../utility/Api";
 import { AppCard } from "../../../../components/ui";
-import { getPartnerSessionToken } from "../../../../utility/session";
+import { getPartnerSessionToken } from "../../../../utility/partnerSession";
 
 const BudgetCard = () => {
   const currentYear = new Date().getFullYear();

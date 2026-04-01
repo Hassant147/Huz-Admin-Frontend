@@ -11,6 +11,10 @@ import edit from "../../../../assets/editLogo1.svg";
 import DeactivateButton from "../../../../components/DeactivateButton"; // Adjust the import path as needed
 import ActivateButton from "../../../../components/ActivateButton"; // Adjust the import path as needed
 import { Toaster } from "react-hot-toast";
+import {
+  buildPackageFlowEntryPath,
+  writePackageFlowDraftToStorage,
+} from "../packageFlow/packageFlowState";
 
 const DetailPage = () => {
   const location = useLocation();
@@ -49,77 +53,23 @@ const DetailPage = () => {
   const total_nights =
     packageDetail && packageDetail.mecca_nights + packageDetail.madinah_nights;
   const handleEditClick = () => {
-    const total_packageTabs = [
-      "Basic Information",
-      "Airline",
-      "Transport",
-      "Ziyarah",
-      "Makkah Hotel",
-      "Madina Hotel",
-    ];
-    const completedTabs = [];
-
-    if (packageDetail) {
-      // Basic details are always completed if the package is initialized
-      completedTabs.push("Basic Information");
-
-      if (
-        packageDetail.airline_detail &&
-        packageDetail.airline_detail.length > 0
-      ) {
-        completedTabs.push("Airline");
-      }
-      if (
-        packageDetail.transport_detail &&
-        packageDetail.transport_detail.length > 0
-      ) {
-        completedTabs.push("Transport");
-      }
-      if (
-        packageDetail.ziyarah_detail &&
-        packageDetail.ziyarah_detail.length > 0
-      ) {
-        completedTabs.push("Ziyarah");
-      }
-      if (
-        packageDetail.hotel_detail &&
-        packageDetail.hotel_detail.some(
-          (hotel) => hotel.hotel_city.toLowerCase() === "mecca"
-        )
-      ) {
-        completedTabs.push("Makkah Hotel");
-      }
-      if (
-        packageDetail.hotel_detail &&
-        packageDetail.hotel_detail.some(
-          (hotel) => hotel.hotel_city.toLowerCase() === "madinah"
-        )
-      ) {
-        completedTabs.push("Madina Hotel");
-      }
-
-      localStorage.setItem("packageDetail", JSON.stringify(packageDetail));
-      localStorage.setItem(
-        "total_packageTabs",
-        JSON.stringify(total_packageTabs)
-      );
-      localStorage.setItem("completedTabs", JSON.stringify(completedTabs));
-
-      if (packageDetail.package_stage < 6) {
-        navigate(
-          `/company/continue-existing-package-creation?partnerSessionToken=${encodeURIComponent(
-            partnerSessionToken || ""
-          )}&huzToken=${encodeURIComponent(huzToken || "")}`
-        );
-      } else {
-        navigate(
-          `/edit-package?partnerSessionToken=${encodeURIComponent(
-            partnerSessionToken || ""
-          )}&huzToken=${encodeURIComponent(huzToken || "")}`,
-          { state: { packageDetail } }
-        );
-      }
+    if (!packageDetail) {
+      return;
     }
+
+    writePackageFlowDraftToStorage(packageDetail, {
+      mode: packageDetail.package_stage < 6 ? "continue" : "edit",
+      force: true,
+    });
+
+    navigate(
+      buildPackageFlowEntryPath(
+        packageDetail,
+        partnerSessionToken || "",
+        huzToken || ""
+      ),
+      { state: { packageDetail } }
+    );
   };
 
   if (loading) {

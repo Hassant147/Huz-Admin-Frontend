@@ -1,4 +1,4 @@
-import React, { Suspense, createContext, lazy, useState } from "react";
+import React, { Suspense, lazy } from "react";
 import { BrowserRouter as Router, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -11,12 +11,13 @@ import { RouteLoader } from "./components/ui";
 import { UserProvider } from "./context/UserContext";
 import { BookingProvider } from "./context/BookingContext";
 import { CurrencyProvider } from "./utility/CurrencyContext";
+import { getPartnerRouteAccessState } from "./utility/partnerSession";
 import {
   buildAdminBookingDetailsPath,
   buildAdminBookingSubflowPath,
   parseAdminBookingNumberFromSearch,
 } from "./pages/Admin-Panel/Bookings/bookingRouteUtils";
-import { isAdminSessionActive } from "./utility/adminSession";
+import { AdminAuthProvider, useAdminAuth } from "./utility/adminSession";
 
 const LoginPage = lazy(() => import("./pages/login/login"));
 
@@ -54,31 +55,6 @@ const PrivacyPolicy = lazy(() => import("./pages/Admin-Panel/ExtraPages/PrivacyP
 const TermsServices = lazy(() => import("./pages/Admin-Panel/ExtraPages/TermsServices/TermsServices"));
 const Documentation = lazy(() => import("./pages/Admin-Panel/ExtraPages/Documentation-Page/doc"));
 const HotelCatalog = lazy(() => import("./pages/Admin-Panel/HotelCatalog/HotelCatalog"));
-
-const getUserStatus = () => {
-  const profile = localStorage.getItem("SignedUp-User-Profile");
-  if (!profile) return { isLoggedIn: false };
-
-  try {
-    const {
-      is_email_verified: isEmailVerified,
-      partner_type: partnerType,
-      account_status: accountStatus,
-      partner_type_and_detail: typeAndDetail,
-    } = JSON.parse(profile);
-
-    return {
-      isLoggedIn: true,
-      isEmailVerified,
-      partnerType,
-      accountStatus,
-      typeAndDetail,
-    };
-  } catch (error) {
-    console.error("Error parsing profile JSON:", error);
-    return { isLoggedIn: false };
-  }
-};
 
 const resolveLegacyBookingNumber = (location) =>
   location?.state?.bookingNumber || parseAdminBookingNumberFromSearch(location?.search);
@@ -134,7 +110,13 @@ const LegacyTransportPackageRedirect = () => (
 );
 
 const SuperAdminProtectedRoute = ({ element }) => {
-  if (isAdminSessionActive()) {
+  const { isAuthenticated, isLoading } = useAdminAuth();
+
+  if (isLoading) {
+    return <RouteLoader />;
+  }
+
+  if (isAuthenticated) {
     return element;
   }
 
@@ -142,21 +124,55 @@ const SuperAdminProtectedRoute = ({ element }) => {
 };
 
 const PartnerPanelProtectedRoute = ({ element }) => {
-  const { isLoggedIn, isEmailVerified, partnerType, accountStatus } = getUserStatus();
+  const { isAuthenticated, isLoading } = useAdminAuth();
 
-  if (isAdminSessionActive()) {
+  if (isLoading) {
+    return <RouteLoader />;
+  }
+
+  if (isAuthenticated) {
     return <Navigate to="/super-admin-dashboard" replace />;
   }
 
+  const { isLoggedIn, isEmailVerified, partnerType, accountStatus } =
+    getPartnerRouteAccessState();
+
   if (isLoggedIn && isEmailVerified && partnerType !== "NA" && accountStatus === "Active") {
+    return <UserProvider>{element}</UserProvider>;
+  }
+
+  return <Navigate to="/" replace />;
+};
+
+const SharedAppProtectedRoute = ({ element }) => {
+  const { isAuthenticated, isLoading } = useAdminAuth();
+
+  if (isLoading) {
+    return <RouteLoader />;
+  }
+
+  if (isAuthenticated) {
     return element;
+  }
+
+  const { isLoggedIn, isEmailVerified, partnerType, accountStatus } =
+    getPartnerRouteAccessState();
+
+  if (isLoggedIn && isEmailVerified && partnerType !== "NA" && accountStatus === "Active") {
+    return <UserProvider>{element}</UserProvider>;
   }
 
   return <Navigate to="/" replace />;
 };
 
 const LoginRedirectRoute = ({ element }) => {
-  return isAdminSessionActive() ? <Navigate to="/super-admin-dashboard" replace /> : element;
+  const { isAuthenticated, isLoading } = useAdminAuth();
+
+  if (isLoading) {
+    return <RouteLoader />;
+  }
+
+  return isAuthenticated ? <Navigate to="/super-admin-dashboard" replace /> : element;
 };
 
 const SUPER_ADMIN_ROUTES = [
@@ -235,7 +251,6 @@ const PARTNER_ROUTES = [
   { path: "/individual/package-creation", Component: LegacyTransportPackageRedirect },
   { path: "/edit-package", Component: EditPackagePage, props: { isEditing: true } },
   { path: "/company/continue-existing-package-creation", Component: ContinueCreatedCompanyForms },
-  { path: "/profile", Component: Profile },
   { path: "/booking", Component: Bookings },
   { path: "/booking/:bookingNumber", Component: BookingDetails },
   { path: "/bookingdetails", Component: LegacyBookingDetailsRedirect },
@@ -252,106 +267,111 @@ const PARTNER_ROUTES = [
   { path: "/reviews-ratings", Component: Reviews },
   { path: "/withdrawhistory", Component: WithdrawHistory },
   { path: "/accountstatementhistory", Component: AccountStatementHistory },
+  { path: "/complaints", Component: Complaints },
+];
+
+const SHARED_LAYOUT_ROUTES = [
+  { path: "/profile", Component: Profile },
   { path: "/faq", Component: FQA },
   { path: "/privacy-policy", Component: PrivacyPolicy },
   { path: "/terms-of-services", Component: TermsServices },
   { path: "/documentation", Component: Documentation },
-  { path: "/complaints", Component: Complaints },
 ];
 
-export const NavigationContext = createContext();
-
 const App = () => {
-  const [isEmailSignupVisited, setIsEmailSignupVisited] = useState(false);
-
   return (
     <div className="App admin-theme">
-      <UserProvider>
-        <CurrencyProvider>
-          <BookingProvider>
-            <NavigationContext.Provider value={{ isEmailSignupVisited, setIsEmailSignupVisited }}>
-              <Router>
-                <Suspense fallback={<RouteLoader />}>
-                  <Routes>
+      <CurrencyProvider>
+        <BookingProvider>
+          <AdminAuthProvider>
+            <Router>
+              <Suspense fallback={<RouteLoader />}>
+                <Routes>
+                  <Route
+                    path="/"
+                    element={
+                      <LoginRedirectRoute
+                        element={
+                          <HeaderNavbarCom>
+                            <LoginPage />
+                          </HeaderNavbarCom>
+                        }
+                      />
+                    }
+                  />
+
+                  <Route
+                    path="/access-profile"
+                    element={
+                      <SharedAppProtectedRoute
+                        element={<Navigate to="/profile" replace />}
+                      />
+                    }
+                  />
+
+                  {SUPER_ADMIN_ROUTES.map(({
+                    path,
+                    title,
+                    subtitle,
+                    Component,
+                    showPageBanner = true,
+                  }) => (
                     <Route
-                      path="/"
+                      key={path}
+                      path={path}
                       element={
-                        <LoginRedirectRoute
+                        <SuperAdminProtectedRoute
                           element={
-                            <HeaderNavbarCom>
-                              <LoginPage />
+                            <HeaderNavbarCom
+                              title={showPageBanner ? title : ""}
+                              subtitle={showPageBanner ? subtitle : ""}
+                            >
+                              <Component />
                             </HeaderNavbarCom>
                           }
                         />
                       }
                     />
+                  ))}
 
+                  {PARTNER_ROUTES.map(({ path, Component, props }) => (
                     <Route
-                      path="/access-profile"
+                      key={path}
+                      path={path}
                       element={
-                        <SuperAdminProtectedRoute
-                          element={<Navigate to="/super-admin-dashboard" replace />}
+                        <PartnerPanelProtectedRoute
+                          element={<Component {...(props || {})} />}
                         />
                       }
                     />
+                  ))}
 
-                    {SUPER_ADMIN_ROUTES.map(({
-                      path,
-                      title,
-                      subtitle,
-                      Component,
-                      showPageBanner = true,
-                    }) => (
-                      <Route
-                        key={path}
-                        path={path}
-                        element={
-                          <SuperAdminProtectedRoute
-                            element={
-                              <HeaderNavbarCom
-                                title={showPageBanner ? title : ""}
-                                subtitle={showPageBanner ? subtitle : ""}
-                              >
-                                <Component />
-                              </HeaderNavbarCom>
-                            }
-                          />
-                        }
-                      />
-                    ))}
+                  {SHARED_LAYOUT_ROUTES.map(({ path, Component, props }) => (
+                    <Route
+                      key={path}
+                      path={path}
+                      element={<SharedAppProtectedRoute element={<Component {...(props || {})} />} />}
+                    />
+                  ))}
+                </Routes>
+              </Suspense>
 
-                    {PARTNER_ROUTES.map(({ path, Component, props }) => (
-                      <Route
-                        key={path}
-                        path={path}
-                        element={
-                          <PartnerPanelProtectedRoute
-                            element={<Component {...(props || {})} />}
-                          />
-                        }
-                      />
-                    ))}
-
-                  </Routes>
-                </Suspense>
-
-                <ScrollToTopButton />
-                <ToastContainer
-                  position="top-right"
-                  autoClose={5000}
-                  hideProgressBar
-                  newestOnTop={false}
-                  closeOnClick
-                  rtl={false}
-                  pauseOnFocusLoss
-                  draggable
-                  pauseOnHover
-                />
-              </Router>
-            </NavigationContext.Provider>
-          </BookingProvider>
-        </CurrencyProvider>
-      </UserProvider>
+              <ScrollToTopButton />
+              <ToastContainer
+                position="top-right"
+                autoClose={5000}
+                hideProgressBar
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+              />
+            </Router>
+          </AdminAuthProvider>
+        </BookingProvider>
+      </CurrencyProvider>
     </div>
   );
 };

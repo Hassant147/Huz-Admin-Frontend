@@ -16,7 +16,7 @@ import ReviewAndRating from "./components/ReviewAndRating";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import {
   getBookingWorkflowScreen,
-  normalizeIssueStatus,
+  hasReportedIssueState,
 } from "../bookingWorkflowUtils";
 import ReportedTravelers from "./components/ReportedTravelers";
 import useAdminBookingLoader from "./useAdminBookingLoader";
@@ -57,8 +57,6 @@ const BookingDetailsContent = ({ booking, loading, error }) => {
         return <ViewOnly booking={booking} />;
       case "READY":
         return <Pending booking={booking} />;
-      case "REPORTED":
-        return <Objection booking={booking} />;
       case "ISSUE":
         return <Objection booking={booking} />;
       case "FULFILLMENT":
@@ -82,10 +80,7 @@ const BookingDetailsContent = ({ booking, loading, error }) => {
   const sortedObjections = [...(booking?.booking_objections || [])].sort(
     (a, b) => new Date(a.create_time) - new Date(b.create_time)
   );
-  const issueStatus = normalizeIssueStatus(booking?.issue_status);
-  const hasTravelerIssues =
-    (Array.isArray(booking?.reported_travelers) && booking.reported_travelers.length > 0) ||
-    (Array.isArray(booking?.open_traveler_issues) && booking.open_traveler_issues.length > 0);
+  const hasReportedIssues = hasReportedIssueState(booking);
 
   return (
     <div className="flex lg:flex-row flex-col lg:h-full mb-10">
@@ -97,7 +92,7 @@ const BookingDetailsContent = ({ booking, loading, error }) => {
         )}
       </div>
       <div className="lg:w-2/3 lg:px-4 py-4 lg:py-0 space-y-4 flex-grow">
-        {issueStatus === "REPORTED" || hasTravelerIssues ? (
+        {hasReportedIssues ? (
           <ReportedTravelers booking={booking} />
         ) : null}
         <PackageDetails booking={booking} />

@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import avatar1 from "../../assets/Avatar.svg";
 import huzlogo from "../../assets/Components/huzlogo.svg";
 import { AppButton, AppContainer } from "../ui";
+import { useAdminAuth } from "../../utility/adminSession";
 
 const Header = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -14,6 +15,7 @@ const Header = () => {
   const notificationsRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const { logout } = useAdminAuth();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -36,9 +38,8 @@ const Header = () => {
 
   const isLoginRoute = location.pathname === "/";
 
-  const handleSignOut = () => {
-    localStorage.clear();
-    sessionStorage.clear();
+  const handleSignOut = async () => {
+    await logout();
     navigate("/", { replace: true });
   };
 
@@ -109,8 +110,30 @@ const Header = () => {
               {isProfileOpen ? (
                 <div className="absolute right-0 mt-2 w-52 app-panel z-20">
                   <ul className="py-2 text-sm text-ink-700">
-                    <li className="px-4 py-2 hover:bg-slate-50 cursor-pointer">Profile</li>
-                    <li className="px-4 py-2 hover:bg-slate-50 cursor-pointer">Settings</li>
+                    <li>
+                      <button
+                        type="button"
+                        className="w-full px-4 py-2 text-left hover:bg-slate-50"
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          navigate("/profile");
+                        }}
+                      >
+                        My Profile
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        className="w-full px-4 py-2 text-left hover:bg-slate-50"
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          navigate("/faq");
+                        }}
+                      >
+                        Help & FAQ
+                      </button>
+                    </li>
                     <li className="px-4 py-2">
                       <AppButton
                         onClick={handleSignOut}

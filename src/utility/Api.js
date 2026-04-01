@@ -1,22 +1,18 @@
-import axios from "axios";
+import { createApiClient, isManagementRequest } from "./apiConfig";
+import { handleAdminUnauthorizedResponse } from "./adminSession";
 
-const resolveApiBaseURL = () => {
-  const configuredURL = `${process.env.REACT_APP_API_BASE_URL || ""}`.trim();
-  const fallbackURL = "https://hajjumrah.org";
-  const normalizedBaseURL = configuredURL || fallbackURL;
-  return normalizedBaseURL.replace(/\/+$/, "");
-};
+const apiClient = createApiClient();
 
-const API_BASE_URL = resolveApiBaseURL();
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (isManagementRequest(error?.config?.url)) {
+      return handleAdminUnauthorizedResponse(error);
+    }
 
-// Create an Axios instance with the base URL and default headers
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `${process.env.REACT_APP_AUTH_TOKEN}`,
-  },
-});
+    return Promise.reject(error);
+  }
+);
 
 const EMPTY_PAGINATED_RESPONSE = {
   count: 0,
@@ -48,10 +44,79 @@ const normalizePaginatedResponse = (payload) => {
   return EMPTY_PAGINATED_RESPONSE;
 };
 
+const getPartnerSessionTokenFromPayload = (payload) => {
+  if (payload instanceof FormData) {
+    return `${payload.get("partner_session_token") || ""}`.trim();
+  }
+
+  if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+    return `${payload.partner_session_token || ""}`.trim();
+  }
+
+  return "";
+};
+
+const stripPartnerSessionToken = (payload) => {
+  if (payload instanceof FormData) {
+    const sanitizedFormData = new FormData();
+    for (const [key, value] of payload.entries()) {
+      if (key !== "partner_session_token") {
+        sanitizedFormData.append(key, value);
+      }
+    }
+    return sanitizedFormData;
+  }
+
+  if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+    const { partner_session_token, ...rest } = payload;
+    return rest;
+  }
+
+  return payload;
+};
+
+const withPartnerAuth = (config = {}, explicitToken = "", payload = null) => {
+  const partnerSessionToken = `${explicitToken || getPartnerSessionTokenFromPayload(payload) || ""}`.trim();
+  if (!partnerSessionToken) {
+    return config;
+  }
+
+  return {
+    ...config,
+    headers: {
+      ...(config.headers || {}),
+      Authorization: `Bearer ${partnerSessionToken}`,
+    },
+  };
+};
+
+const buildPartnerMutationRequest = (payload, explicitToken = "", config = {}) => ({
+  payload: stripPartnerSessionToken(payload),
+  config: withPartnerAuth(config, explicitToken, payload),
+});
+
+const postPartnerMutation = (url, payload, explicitToken = "", config = {}) => {
+  const request = buildPartnerMutationRequest(payload, explicitToken, config);
+  return apiClient.post(url, request.payload, request.config);
+};
+
+const putPartnerMutation = (url, payload, explicitToken = "", config = {}) => {
+  const request = buildPartnerMutationRequest(payload, explicitToken, config);
+  return apiClient.put(url, request.payload, request.config);
+};
+
+const deletePartnerMutation = (url, payload, explicitToken = "", config = {}) => {
+  const request = buildPartnerMutationRequest(payload, explicitToken, config);
+  return apiClient.delete(url, {
+    ...request.config,
+    data: request.payload,
+  });
+};
+
 // Function to enroll package basic details
 export const enrollPackageBasicDetail = async (data) => {
   try {
-    const response = await apiClient.post(
+    const response = await postPartnerMutation(
       "/partner/enroll_package_basic_detail/",
       data
     );
@@ -64,7 +129,7 @@ export const enrollPackageBasicDetail = async (data) => {
 // Function to edit package basic details
 export const editPackageBasicDetail = async (data) => {
   try {
-    const response = await apiClient.put(
+    const response = await putPartnerMutation(
       "/partner/enroll_package_basic_detail/",
       data
     );
@@ -78,7 +143,7 @@ export const editPackageBasicDetail = async (data) => {
 // Function to enroll package airline details
 export const enrollPackageAirlineDetail = async (data) => {
   try {
-    const response = await apiClient.post(
+    const response = await postPartnerMutation(
       "/partner/enroll_package_airline_detail/",
       data
     );
@@ -91,7 +156,7 @@ export const enrollPackageAirlineDetail = async (data) => {
 // Function to Edit package airline details
 export const editPackageAirlineDetail = async (data) => {
   try {
-    const response = await apiClient.put(
+    const response = await putPartnerMutation(
       "/partner/enroll_package_airline_detail/",
       data
     );
@@ -105,7 +170,7 @@ export const editPackageAirlineDetail = async (data) => {
 // Function to enroll package transport details
 export const enrollPackageTransportDetail = async (data) => {
   try {
-    const response = await apiClient.post(
+    const response = await postPartnerMutation(
       "/partner/enroll_package_transport_detail/",
       data
     );
@@ -118,7 +183,7 @@ export const enrollPackageTransportDetail = async (data) => {
 // Function to edit package transport details
 export const editPackageTransportDetail = async (data) => {
   try {
-    const response = await apiClient.put(
+    const response = await putPartnerMutation(
       "/partner/enroll_package_transport_detail/",
       data
     );
@@ -132,7 +197,7 @@ export const editPackageTransportDetail = async (data) => {
 // Function to enroll package Ziyarah details
 export const enrollPackageZiyarahDetail = async (data) => {
   try {
-    const response = await apiClient.post(
+    const response = await postPartnerMutation(
       "/partner/enroll_package_ziyarah_detail/",
       data
     );
@@ -145,7 +210,7 @@ export const enrollPackageZiyarahDetail = async (data) => {
 // Function to edit package Ziyarah details
 export const editPackageZiyarahDetail = async (data) => {
   try {
-    const response = await apiClient.put(
+    const response = await putPartnerMutation(
       "/partner/enroll_package_ziyarah_detail/",
       data
     );
@@ -159,7 +224,7 @@ export const editPackageZiyarahDetail = async (data) => {
 // Function to enroll package hotel details
 export const enrollPackageHotelDetail = async (data) => {
   try {
-    const response = await apiClient.post(
+    const response = await postPartnerMutation(
       "/partner/enroll_package_hotel_detail/",
       data
     );
@@ -172,7 +237,7 @@ export const enrollPackageHotelDetail = async (data) => {
 // Function to edit package hotel detail
 export const editPackageHotelDetail = async (data) => {
   try {
-    const response = await apiClient.put(
+    const response = await putPartnerMutation(
       "/partner/enroll_package_hotel_detail/",
       data
     );
@@ -180,19 +245,6 @@ export const editPackageHotelDetail = async (data) => {
   } catch (error) {
     console.error(error);
     throw new Error("Failed to edit package hotel detail");
-  }
-};
-
-// Delete Hotel Photo
-export const deleteHotelPhoto = async (data) => {
-  try {
-    const response = await apiClient.delete("/partner/upload_hotel_photos/", {
-      data,
-    });
-    return response.data;
-  } catch (error) {
-    console.error(error);
-    throw new Error("Failed to delete hotel photo");
   }
 };
 
@@ -211,9 +263,10 @@ export const deactivatePackage = async (
   };
 
   try {
-    const response = await apiClient.put(
+    const response = await putPartnerMutation(
       "/partner/change_huz_package_status/",
-      raw
+      raw,
+      partnerSessionToken
     );
     return response.data;
   } catch (error) {
@@ -310,11 +363,17 @@ export const updateCompanyProfile = async (formData, partnerSessionToken) => {
 
 //funciton to upload user avatar
 export const uploadProfileImage = (formData) => {
-  return apiClient.put("/partner/update_partner_avatar/", formData, {
+  const request = buildPartnerMutationRequest(formData, "", {
     headers: {
       "Content-Type": "multipart/form-data",
     },
   });
+
+  return apiClient.put(
+    "/partner/update_partner_avatar/",
+    request.payload,
+    request.config
+  );
 };
 
 //funciton to upload company logo
@@ -564,7 +623,7 @@ export const updateBookingStatus = async (
   };
 
   try {
-    const response = await apiClient.put(endpoint, data);
+    const response = await putPartnerMutation(endpoint, data, partnerSessionToken);
     return response.data;
   } catch (error) {
     throw new Error(
@@ -575,12 +634,13 @@ export const updateBookingStatus = async (
 
 export const closeBooking = async (partnerSessionToken, bookingNumber) => {
   try {
-    const response = await apiClient.put(
+    const response = await putPartnerMutation(
       "/bookings/update_booking_status_into_close/",
       {
         partner_session_token: partnerSessionToken,
         booking_number: bookingNumber,
-      }
+      },
+      partnerSessionToken
     );
     return response.data;
   } catch (error) {
@@ -606,7 +666,6 @@ export const updateBookingDocumentStatus = async (
     formData.append("document_link", file); // Ensure this is a File object
     formData.append("document_for", documentType);
     formData.append("document_category", options.documentCategory || documentType);
-    formData.append("partner_session_token", partnerSessionToken);
     if (options.documentScope) {
       formData.append("document_scope", options.documentScope);
     }
@@ -620,9 +679,10 @@ export const updateBookingDocumentStatus = async (
       formData.append("traveler_id", options.travelerId);
     }
 
-    const response = await apiClient.post(
+    const response = await postPartnerMutation(
       "/bookings/manage_booking_documents/",
       formData,
+      partnerSessionToken,
       {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -659,9 +719,12 @@ export const PostAirlineDetails = async (
           flight_to: flightTo,
         };
   try {
-    const response = await apiClient.post(
+    const response = await postPartnerMutation(
       "/bookings/manage_booking_airline_details/",
-      payload
+      payload,
+      typeof partnerSessionTokenOrPayload === "string"
+        ? partnerSessionTokenOrPayload
+        : ""
     );
     return response.data;
   } catch (error) {
@@ -673,11 +736,9 @@ export const PostAirlineDetails = async (
 //function to delete document from Booking
 export const deleteBookingDocument = async (props) => {
   try {
-    const response = await apiClient.delete(
+    const response = await deletePartnerMutation(
       "/bookings/delete_booking_documents/",
-      {
-        data: props,
-      }
+      props
     );
     return response.data;
   } catch (error) {
@@ -715,9 +776,12 @@ export const updateAirlineDetails = async (
         };
 
   try {
-    const response = await apiClient.put(
+    const response = await putPartnerMutation(
       "/bookings/manage_booking_airline_details/",
-      data
+      data,
+      typeof partnerSessionTokenOrPayload === "string"
+        ? partnerSessionTokenOrPayload
+        : ""
     );
     return response.data;
   } catch (error) {
@@ -729,7 +793,7 @@ export const updateAirlineDetails = async (
 //function to Post transport/Hotel forms in booking
 export const postTransportDetails = async (formData) => {
   try {
-    const response = await apiClient.post(
+    const response = await postPartnerMutation(
       "/bookings/manage_booking_hotel_or_transport_details/",
       formData
     );
@@ -764,7 +828,7 @@ export const addWithdrawRequest = async (
 //function to edit transport/Hotel forms in booking
 export const updateTransportDetails = async (formData) => {
   try {
-    const response = await apiClient.put(
+    const response = await putPartnerMutation(
       "/bookings/manage_booking_hotel_or_transport_details/",
       formData
     );
@@ -785,7 +849,7 @@ export const manageTravelerIssue = async ({
   notes = "",
 }) => {
   try {
-    const response = await apiClient.put(
+    const response = await putPartnerMutation(
       "/bookings/manage_traveler_issues/",
       {
         partner_session_token: partnerSessionToken,
@@ -795,7 +859,8 @@ export const manageTravelerIssue = async ({
         action,
         issue_type: issueType,
         notes,
-      }
+      },
+      partnerSessionToken
     );
     return response.data;
   } catch (error) {
@@ -807,7 +872,12 @@ export const manageTravelerIssue = async ({
 export const getWithdrawRequest = async (partnerSessionToken) => {
   try {
     const response = await apiClient.get(
-      `/partner/manage_partner_withdraw_request/F${partnerSessionToken}`
+      "/partner/manage_partner_withdraw_request/",
+      {
+        params: {
+          partner_session_token: partnerSessionToken,
+        },
+      }
     );
 
     return response.data;

@@ -3,7 +3,7 @@ import arrow from "../../../../assets/star.svg";
 import Loader from "../../../../components/loader";
 import { getOverPartnerRating } from "../../../../utility/Api";
 import { AppCard } from "../../../../components/ui";
-import { getPartnerSessionToken } from "../../../../utility/session";
+import { getPartnerSessionToken } from "../../../../utility/partnerSession";
 
 const RatingSystem = () => {
   const [ratings, setRatings] = useState([]);

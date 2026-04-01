@@ -1,8 +1,9 @@
 import {
+  normalizeWorkflowBucket as normalizeSharedWorkflowBucket,
   resolveBackendActionFlags,
   resolveFulfillmentSummary,
   resolveWorkflowBucket,
-} from "../../../shared/bookingWorkflowContract.js";
+} from "../shared/bookingWorkflowContract.js";
 
 const ABSOLUTE_URL_PATTERN = /^[a-z][a-z0-9+.-]*:/i;
 
@@ -37,6 +38,15 @@ const normalizeCityKey = (value = "") =>
     .toLowerCase()
     .replace("mecca", "makkah")
     .replace("medina", "madinah");
+
+const normalizeAdminWorkflowBucket = (value) => {
+  const normalized = toString(value).toUpperCase();
+  if (normalized === "REPORTED") {
+    return "ISSUES";
+  }
+
+  return normalizeSharedWorkflowBucket(value);
+};
 
 export const resolveAdminAssetHref = (value = "") => {
   const normalized = toString(value);
@@ -495,7 +505,8 @@ export const adaptAdminBooking = (booking = {}) => {
   );
   const fulfillmentSummary = resolveFulfillmentSummary(booking);
   const actionFlags = resolveBackendActionFlags(booking);
-  const workflowBucket = resolveWorkflowBucket(booking) || booking?.workflow_bucket || "";
+  const workflowBucket =
+    normalizeAdminWorkflowBucket(booking?.workflow_bucket) || resolveWorkflowBucket(booking);
 
   return {
     ...booking,

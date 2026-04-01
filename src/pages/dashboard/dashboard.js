@@ -8,6 +8,7 @@ import {
   FiUserCheck,
 } from "react-icons/fi";
 import { AppCard, AppContainer } from "../../components/ui";
+import { useAdminAuth } from "../../utility/adminSession";
 
 const DASHBOARD_LINKS = [
   {
@@ -45,14 +46,10 @@ const DASHBOARD_LINKS = [
 ];
 
 const Dashboard = () => {
+  const { user } = useAdminAuth();
   const userName = useMemo(() => {
-    try {
-      const userData = JSON.parse(localStorage.getItem("user-data") || "{}");
-      return userData?.name || "Admin";
-    } catch {
-      return "Admin";
-    }
-  }, []);
+    return user?.name || user?.username || "Admin";
+  }, [user]);
 
   return (
     <main className="app-main-shell pb-10">

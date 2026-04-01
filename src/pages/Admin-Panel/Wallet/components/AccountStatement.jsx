@@ -5,7 +5,7 @@ import debitIcon from "../../../../assets/debitIcon.svg";
 import { getPartnerAllTransaction } from "../../../../utility/Api";
 import Loader from "../../../../components/loader";
 import { useNavigate } from "react-router-dom";
-import { getPartnerSessionToken } from "../../../../utility/session";
+import { getPartnerSessionToken } from "../../../../utility/partnerSession";
 
 const AccountStatement = () => {
   const [transactions, setTransactions] = useState([]);

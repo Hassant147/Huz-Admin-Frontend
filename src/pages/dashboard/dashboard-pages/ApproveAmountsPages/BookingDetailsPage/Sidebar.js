@@ -13,7 +13,7 @@ import {
   getPaymentStatusLabel,
   getWorkflowSummaryLabel,
 } from "../bookingReviewUtils";
-import { resolveInitialPaymentStatus } from "../../../../../../../shared/bookingWorkflowContract.js";
+import { resolveInitialPaymentStatus } from "../../../../../shared/bookingWorkflowContract.js";
 
 const Sidebar = ({ booking }) => {
   if (!booking) {

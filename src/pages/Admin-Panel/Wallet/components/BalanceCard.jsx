@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import BalanceCardImage from '../../../../assets/BalanceCard.svg';
-import { getStoredUserProfile } from "../../../../utility/session";
+import { getStoredPartnerProfile } from "../../../../utility/partnerSession";
 
 const BalanceCard = () => {
   const [isBalanceVisible, setIsBalanceVisible] = useState(false); // Initially hidden
-  const profile = getStoredUserProfile() || { wallet_amount: "0" };
+  const profile = getStoredPartnerProfile() || { wallet_amount: "0" };
   const walletAmount = Number(profile.wallet_amount || 0);
 
   const toggleBalanceVisibility = () => {

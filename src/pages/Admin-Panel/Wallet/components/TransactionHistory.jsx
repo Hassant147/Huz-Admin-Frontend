@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import TransactionHistoryIcon from "../../../../assets/TransactionHistoryIcon.svg";
 import { getPartnerOverallTransactionHistory } from "../../../../utility/Api";
 import Loader from "../../../../components/loader";
-import { getPartnerSessionToken } from "../../../../utility/session";
+import { getPartnerSessionToken } from "../../../../utility/partnerSession";
 
 const TransactionHistory = () => {
   const [summary, setSummary] = useState({

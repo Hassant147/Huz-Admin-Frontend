@@ -1,5 +1,5 @@
 import React from "react";
-import { resolveInitialPaymentStatus } from "../../../../../../shared/bookingWorkflowContract.js";
+import { resolveInitialPaymentStatus } from "../../../../shared/bookingWorkflowContract.js";
 
 const ViewOnly = ({ booking }) => {
   if (!booking) {

@@ -7,15 +7,15 @@ import AdminPanelLayout from "../../../../components/layout/AdminPanelLayout";
 import DeleteIcon from "../../../../assets/DeleteIcon.svg";
 import Loader from "../../../../components/loader";
 import AccountStatementImage from "../../../../assets/AccountsStatement.svg";
+import { getPartnerSessionToken } from "../../../../utility/partnerSession";
 
 const WithdrawHistory = () => {
   const [fetchingData, setFetchingData] = useState(true); // New state for fetching loader
   const [bankAccounts, setBankAccounts] = useState([]);
   useEffect(() => {
     const fetchBankAccounts = async () => {
-      const profile = JSON.parse(localStorage.getItem("SignedUp-User-Profile"));
-      if (profile) {
-        const partnerSessionToken = profile.partner_session_token;
+      const partnerSessionToken = getPartnerSessionToken();
+      if (partnerSessionToken) {
         try {
           const AccountData = await getWithdrawRequest(partnerSessionToken);
           if (AccountData) {
@@ -65,12 +65,19 @@ const WithdrawHistory = () => {
             </thead>
             <tbody>
               {fetchingData ? (
-                <div className="h-[350px] flex justify-center items-center">
-                  <Loader />
-                </div>
+                <tr>
+                  <td colSpan="5">
+                    <div className="flex h-[350px] items-center justify-center">
+                      <Loader />
+                    </div>
+                  </td>
+                </tr>
               ) : bankAccounts.length > 0 ? (
                 bankAccounts.map((account) => (
-                  <tr className=" border-b hover:bg-gray-50 ">
+                  <tr
+                    key={`${account.account_number}-${account.request_time}`}
+                    className=" border-b hover:bg-gray-50 "
+                  >
                     <th
                       scope="row"
                       className="p-4 py-2 text-sm font-medium text-[#4b465c] whitespace-nowrap"

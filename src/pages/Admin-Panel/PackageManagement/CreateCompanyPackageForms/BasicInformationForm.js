@@ -1,13 +1,36 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   enrollPackageBasicDetail,
   editPackageBasicDetail,
 } from "../../../../utility/Api";
 import ClipLoader from "../../../../components/loader";
 import { BiErrorAlt } from "react-icons/bi";
+import {
+  PACKAGE_FLOW_STORAGE_KEYS,
+  readPackageFlowJson,
+} from "../packageFlow/packageFlowState";
 
 const MAX_NIGHTS = 999;
 const MAX_COST_LENGTH = 10;
+const DEFAULT_PACKAGE_DETAILS = {
+  packageName: "",
+  packageBaseCost: "",
+  packageCostForChild: "",
+  packageCostForInfants: "",
+  packageCostForSharing: "",
+  packageCostForQuad: "",
+  packageCostForTriple: "",
+  packageCostForDouble: "",
+  packageCostForSingle: "",
+  nightsInMecca: "",
+  nightsInMadinah: "",
+  startDate: "",
+  endDate: "",
+  packageDescription: "",
+  flexibleDates: false,
+  packageValidity: "",
+  services: [],
+};
 
 const ServiceCheckbox = ({ service, isChecked, onChange }) => (
   <div className="flex text-gray-600 items-center font-thin mr-4 text-xs lg:text-sm">
@@ -24,81 +47,21 @@ const ServiceCheckbox = ({ service, isChecked, onChange }) => (
 );
 
 const BasicInfoForm = ({ formData, onChange, onNextTab, isEditing }) => {
-  const [packageDetails, setPackageDetails] = useState({
-    packageName: "",
-    packageBaseCost: "",
-    packageCostForChild: "",
-    packageCostForInfants: "",
-    packageCostForSharing: "",
-    packageCostForQuad: "",
-    packageCostForTriple: "",
-    packageCostForDouble: "",
-    packageCostForSingle: "",
-    nightsInMecca: "",
-    nightsInMadinah: "",
-    startDate: "",
-    endDate: "",
-    packageDescription: "",
-    flexibleDates: false,
-    packageValidity: "",
-    services: [],
-  });
+  const [packageDetails, setPackageDetails] = useState(() => ({
+    ...DEFAULT_PACKAGE_DETAILS,
+    ...(readPackageFlowJson(PACKAGE_FLOW_STORAGE_KEYS.basicDetails, null) ||
+      formData ||
+      {}),
+  }));
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
 
-  const initialStateSet = useRef(false);
-
   useEffect(() => {
-    if (!initialStateSet.current) {
-      const savedData = localStorage.getItem("basicDetails");
-      if (savedData) {
-        setPackageDetails(JSON.parse(savedData));
-      }
-      initialStateSet.current = true;
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isEditing && formData && !initialStateSet.current) {
-      const initialData = {
-        packageName: formData.package_name || "",
-        packageBaseCost: formData.package_base_cost || "",
-        packageCostForChild: formData.cost_for_child || "",
-        packageCostForInfants: formData.cost_for_infants || "",
-        packageCostForSharing: formData.cost_for_sharing || "",
-        packageCostForQuad: formData.cost_for_quad || "",
-        packageCostForTriple: formData.cost_for_triple || "",
-        packageCostForDouble: formData.cost_for_double || "",
-        packageCostForSingle: formData.cost_for_single || "",
-        nightsInMecca: formData.mecca_nights || "",
-        nightsInMadinah: formData.madinah_nights || "",
-        startDate: formData.start_date ? formData.start_date.split("T")[0] : "",
-        endDate: formData.end_date ? formData.end_date.split("T")[0] : "",
-        packageDescription: formData.description || "",
-        flexibleDates: formData.is_package_open_for_other_date || false,
-        packageValidity: formData.package_validity
-          ? formData.package_validity.split("T")[0]
-          : "",
-        services: [
-          ...(formData.is_visa_included ? ["Visa"] : []),
-          ...(formData.is_airport_reception_included
-            ? ["Airport Reception"]
-            : []),
-          ...(formData.is_tour_guide_included ? ["Tour Guide"] : []),
-          ...(formData.is_insurance_included ? ["Insurance"] : []),
-          ...(formData.is_breakfast_included ? ["Breakfast"] : []),
-          ...(formData.is_lunch_included ? ["Lunch"] : []),
-          ...(formData.is_dinner_included ? ["Dinner"] : []),
-        ],
-      };
-      setPackageDetails(initialData);
-      initialStateSet.current = true;
-    }
-  }, [isEditing, formData]);
-
-  useEffect(() => {
-    localStorage.setItem("basicDetails", JSON.stringify(packageDetails));
+    localStorage.setItem(
+      PACKAGE_FLOW_STORAGE_KEYS.basicDetails,
+      JSON.stringify(packageDetails)
+    );
   }, [packageDetails]);
 
   const handleFieldChange = (field, value) => {
@@ -142,7 +105,7 @@ const BasicInfoForm = ({ formData, onChange, onNextTab, isEditing }) => {
       const { partner_session_token } = JSON.parse(
         localStorage.getItem("SignedUp-User-Profile")
       );
-      const huzToken = localStorage.getItem("huz_token");
+      const huzToken = localStorage.getItem(PACKAGE_FLOW_STORAGE_KEYS.huzToken);
 
       const commonData = {
         partner_session_token,
@@ -190,8 +153,14 @@ const BasicInfoForm = ({ formData, onChange, onNextTab, isEditing }) => {
             ...commonData,
             package_type: packageType,
           });
-        if (!isEditing) {
-          localStorage.setItem("huz_token", response.huz_token);
+        if (response?.huz_token) {
+          localStorage.setItem(PACKAGE_FLOW_STORAGE_KEYS.huzToken, response.huz_token);
+        }
+        if (response && typeof response === "object") {
+          localStorage.setItem(
+            PACKAGE_FLOW_STORAGE_KEYS.packageDetail,
+            JSON.stringify(response)
+          );
         }
         onNextTab(response);
       } catch (error) {
@@ -231,12 +200,16 @@ const BasicInfoForm = ({ formData, onChange, onNextTab, isEditing }) => {
   };
 
   const toggleService = (service) => {
-    setPackageDetails((prev) => ({
-      ...prev,
-      services: prev.services.includes(service)
-        ? prev.services.filter((s) => s !== service)
-        : [...prev.services, service],
-    }));
+    setPackageDetails((prev) => {
+      const updatedDetails = {
+        ...prev,
+        services: prev.services.includes(service)
+          ? prev.services.filter((s) => s !== service)
+          : [...prev.services, service],
+      };
+      onChange(updatedDetails);
+      return updatedDetails;
+    });
   };
 
   const calculateEndDate = () => {

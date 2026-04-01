@@ -1,45 +1,30 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   enrollPackageZiyarahDetail,
   editPackageZiyarahDetail,
 } from "../../../../utility/Api"; // Import the edit API function
 import ClipLoader from "../../../../components/loader";
 import { BiErrorAlt } from "react-icons/bi";
+import {
+  PACKAGE_FLOW_STORAGE_KEYS,
+  readPackageFlowJson,
+} from "../packageFlow/packageFlowState";
 
 const ZiyarahForm = ({ formData, onChange, onNextTab, isEditing }) => {
-  const [ziyarahDetails, setZiyarahDetails] = useState({
+  const [ziyarahDetails, setZiyarahDetails] = useState(() => ({
     includedSites: {
       Makkah: [],
       Madinah: [],
+      ...(readPackageFlowJson(PACKAGE_FLOW_STORAGE_KEYS.ziyarahDetails, null)
+        ?.includedSites || formData?.includedSites || {}),
     },
-  });
-
-  const initialStateSet = useRef(false);
+  }));
 
   useEffect(() => {
-    if (!initialStateSet.current) {
-      const savedData = localStorage.getItem("ziyarahDetails");
-      if (savedData) {
-        setZiyarahDetails(JSON.parse(savedData));
-      }
-      initialStateSet.current = true;
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isEditing && formData && !initialStateSet.current) {
-      setZiyarahDetails({
-        includedSites: formData.includedSites || {
-          Makkah: [],
-          Madinah: [],
-        },
-      });
-      initialStateSet.current = true;
-    }
-  }, [isEditing, formData]);
-
-  useEffect(() => {
-    localStorage.setItem("ziyarahDetails", JSON.stringify(ziyarahDetails));
+    localStorage.setItem(
+      PACKAGE_FLOW_STORAGE_KEYS.ziyarahDetails,
+      JSON.stringify(ziyarahDetails)
+    );
   }, [ziyarahDetails]);
 
   const [errors, setErrors] = useState({
@@ -131,7 +116,7 @@ const ZiyarahForm = ({ formData, onChange, onNextTab, isEditing }) => {
     const { partner_session_token } = JSON.parse(
       localStorage.getItem("SignedUp-User-Profile")
     );
-    const huzToken = localStorage.getItem("huz_token");
+    const huzToken = localStorage.getItem(PACKAGE_FLOW_STORAGE_KEYS.huzToken);
     const apiData = {
       partner_session_token,
       huz_token: huzToken,
@@ -143,14 +128,22 @@ const ZiyarahForm = ({ formData, onChange, onNextTab, isEditing }) => {
 
     setLoading(true);
     setApiError("");
+    let response;
 
     try {
       if (isEditing) {
-        await editPackageZiyarahDetail(apiData);
+        response = await editPackageZiyarahDetail(apiData);
       } else {
-        await enrollPackageZiyarahDetail(apiData);
+        response = await enrollPackageZiyarahDetail(apiData);
       }
-      onNextTab();
+
+      if (response && typeof response === "object") {
+        localStorage.setItem(
+          PACKAGE_FLOW_STORAGE_KEYS.packageDetail,
+          JSON.stringify(response)
+        );
+      }
+      onNextTab(response);
     } catch (error) {
       setApiError(error.response?.data?.message || "An error occurred");
     } finally {

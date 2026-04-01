@@ -4,31 +4,32 @@ import {
   invalidateSharedRequest,
   runSharedRequest,
 } from "./requestCache";
-
-const authHeader = `${process.env.REACT_APP_AUTH_TOKEN}`;
-const DEFAULT_API_BASE_URL = "https://hajjumrah.org";
-
-const resolveApiBaseURL = () => {
-  const configuredURL = `${process.env.REACT_APP_API_BASE_URL || ""}`.trim();
-  const fallbackURL = DEFAULT_API_BASE_URL;
-  const normalizedBaseURL = configuredURL || fallbackURL;
-  return normalizedBaseURL.replace(/\/+$/, "");
-};
+import {
+  createApiClient,
+  DEFAULT_API_BASE_URL,
+  DEFAULT_AXIOS_CONFIG,
+  isManagementRequest,
+  resolveApiBaseURL,
+} from "./apiConfig";
+import { handleAdminUnauthorizedResponse } from "./adminSession";
 
 const baseURL = resolveApiBaseURL();
 const defaultFallbackBaseURL = DEFAULT_API_BASE_URL.replace(/\/+$/, "");
 
-const config = {
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: authHeader,
-  },
-};
-
-const apiClient = axios.create({
+const apiClient = createApiClient({
   baseURL,
-  ...config,
 });
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (isManagementRequest(error?.config?.url)) {
+      return handleAdminUnauthorizedResponse(error);
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 const shouldRetryWithLocalFallback = (error) => {
   if (baseURL === defaultFallbackBaseURL) {
@@ -54,14 +55,23 @@ const requestWithFallback = async (requestConfig) => {
       throw error;
     }
 
-    return axios.request({
-      ...requestConfig,
-      baseURL: defaultFallbackBaseURL,
-      headers: {
-        ...config.headers,
-        ...(requestConfig?.headers || {}),
-      },
-    });
+    try {
+      return await axios.request({
+        ...DEFAULT_AXIOS_CONFIG,
+        ...requestConfig,
+        baseURL: defaultFallbackBaseURL,
+        headers: {
+          ...DEFAULT_AXIOS_CONFIG.headers,
+          ...(requestConfig?.headers || {}),
+        },
+      });
+    } catch (fallbackError) {
+      if (isManagementRequest(fallbackError?.config?.url)) {
+        return handleAdminUnauthorizedResponse(fallbackError);
+      }
+
+      throw fallbackError;
+    }
   }
 };
 
@@ -181,33 +191,6 @@ const mergeSettlementReviewBookingDetail = (detailBooking = {}, paymentSource = 
     operator_can_act: paymentSource.operator_can_act ?? detailBooking.operator_can_act,
     workflow_bucket: paymentSource.workflow_bucket || detailBooking.workflow_bucket,
   };
-};
-
-export const checkUserExistence = async (phoneNumber) => {
-  try {
-    const response = await requestWithFallback({
-      method: "post",
-      url: "/common/is_user_exist/",
-      data: {
-        phone_number: phoneNumber,
-      },
-    });
-
-    // Return response status and data to handle it in the component
-    return {
-      status: response.status,
-      data: response.data,
-    };
-  } catch (error) {
-    if (error.response && error.response.status === 404) {
-      return {
-        status: 404,
-      };
-    } else {
-      console.error("Error checking user existence:", error);
-      throw error;
-    }
-  }
 };
 
 export const fetchPendingCompanies = async () => {

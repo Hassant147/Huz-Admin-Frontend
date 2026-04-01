@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { updateCompanyProfile } from "../../../utility/Api";
-import { checkUserNameForPartner } from "../../../utility/AuthApis";
+import { checkPartnerUsernameAvailability } from "../../../utility/partnerProfileApi";
+import {
+  getPartnerSessionToken,
+  getStoredPartnerProfile,
+} from "../../../utility/partnerSession";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 import { BiErrorAlt } from "react-icons/bi";
@@ -46,7 +50,7 @@ const CompanyDetail = () => {
   ];
 
   useEffect(() => {
-    const profile = JSON.parse(localStorage.getItem("SignedUp-User-Profile"));
+    const profile = getStoredPartnerProfile();
     if (profile) {
       const initialProfileData = {
         username: profile.user_name || "",
@@ -120,12 +124,10 @@ const CompanyDetail = () => {
     }
     setLoading(true);
     try {
-      const { partner_session_token } = JSON.parse(
-        localStorage.getItem("SignedUp-User-Profile")
-      );
-      const result = await checkUserNameForPartner({
+      const partnerSessionToken = getPartnerSessionToken();
+      const result = await checkPartnerUsernameAvailability({
         user_name: formData.username,
-        partner_session_token: partner_session_token,
+        partner_session_token: partnerSessionToken,
       });
       if (result.exists) {
         setUsernameStatus({
@@ -192,12 +194,10 @@ const CompanyDetail = () => {
     }
     setSubmitLoading(true);
     try {
-      const { partner_session_token } = JSON.parse(
-        localStorage.getItem("SignedUp-User-Profile")
-      );
+      const partnerSessionToken = getPartnerSessionToken();
       const updatedProfile = await updateCompanyProfile(
         formData,
-        partner_session_token
+        partnerSessionToken
       );
 
       localStorage.setItem(

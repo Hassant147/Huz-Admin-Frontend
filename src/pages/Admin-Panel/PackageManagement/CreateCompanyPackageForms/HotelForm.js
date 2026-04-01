@@ -4,6 +4,7 @@ import ClipLoader from "../../../../components/loader";
 import { BiErrorAlt, BiSearch } from "react-icons/bi";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/swiper-bundle.css";
+import { readPackageFlowJson } from "../packageFlow/packageFlowState";
 
 const HotelForm = ({
   formData,
@@ -16,10 +17,19 @@ const HotelForm = ({
   isEditing,
   hotels,
 }) => {
-  const [hotelDetails, setHotelDetails] = useState({
-    hotelName: "",
-    roomSharingType: "",
-    amenities: [],
+  const [hotelDetails, setHotelDetails] = useState(() => {
+    const storedData = readPackageFlowJson(localStorageKey, null);
+    const initialData = storedData || formData || {};
+
+    return {
+      hotelName: "",
+      roomSharingType: "",
+      amenities: [],
+      hotel_rating: "",
+      hotel_distance: "",
+      ...initialData,
+      amenities: Array.isArray(initialData.amenities) ? initialData.amenities : [],
+    };
   });
 
   const [filteredHotels, setFilteredHotels] = useState([]);
@@ -28,40 +38,15 @@ const HotelForm = ({
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const hotelNameInputRef = useRef(null);
 
-  const initialStateSet = useRef(false);
-
-  useEffect(() => {
-    if (!initialStateSet.current) {
-      const savedData = localStorage.getItem(localStorageKey);
-      if (savedData) {
-        const parsedData = JSON.parse(savedData);
-        setHotelDetails({
-          ...parsedData,
-          amenities: Array.isArray(parsedData.amenities)
-            ? parsedData.amenities
-            : [],
-        });
-        autoSelectHotel(parsedData.hotelName);
-      }
-      initialStateSet.current = true;
-    }
-  }, [localStorageKey]);
-
-  useEffect(() => {
-    if (formData && !initialStateSet.current) {
-      setHotelDetails({
-        hotelName: formData.hotelName || "",
-        roomSharingType: formData.roomSharingType || "",
-        amenities: Array.isArray(formData.amenities) ? formData.amenities : [],
-      });
-      autoSelectHotel(formData.hotelName);
-      initialStateSet.current = true;
-    }
-  }, [formData]);
-
   useEffect(() => {
     localStorage.setItem(localStorageKey, JSON.stringify(hotelDetails));
   }, [hotelDetails, localStorageKey]);
+
+  useEffect(() => {
+    if (!selectedHotel && hotels.length > 0 && hotelDetails.hotelName) {
+      autoSelectHotel(hotelDetails.hotelName);
+    }
+  }, [hotelDetails.hotelName, hotels, selectedHotel]);
 
   const [errors, setErrors] = useState({
     hotelName: "",
@@ -141,6 +126,7 @@ const HotelForm = ({
     setSelectedHotel(hotel);
     setImagesLoaded(false);
     setShowHotelList(false);
+    onChange(updatedDetails);
   };
 
   const handleContinue = async () => {

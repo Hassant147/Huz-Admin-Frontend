@@ -6,14 +6,13 @@ import {
   resolveBackendActionFlags,
   resolveBookingDetailScreen,
   resolveWorkflowBucket,
-} from "../../../../../shared/bookingWorkflowContract.js";
+} from "../../../shared/bookingWorkflowContract.js";
 
 export const WORKFLOW_OPTIONS = [
   { value: "VIEW_ONLY", label: "View Only" },
   { value: "READY", label: "Ready" },
   { value: "FULFILLMENT", label: "In Fulfillment" },
   { value: "READY_FOR_TRAVEL", label: "Ready for Travel" },
-  { value: "REPORTED", label: "Reported" },
   { value: "ISSUES", label: "Issues" },
   { value: "COMPLETED", label: "Completed" },
   { value: "HISTORY", label: "History" },
@@ -36,12 +35,8 @@ const WORKFLOW_META = {
     label: "Ready for Travel",
     badgeTone: "bg-cyan-100 text-cyan-700 font-semibold",
   },
-  REPORTED: {
-    label: "Reported",
-    badgeTone: "bg-amber-100 text-amber-800 font-semibold",
-  },
   ISSUES: {
-    label: "Operator Objection",
+    label: "Issues",
     badgeTone: "bg-rose-100 text-rose-700 font-semibold",
   },
   COMPLETED: {
@@ -52,6 +47,11 @@ const WORKFLOW_META = {
     label: "History",
     badgeTone: "bg-zinc-200 text-zinc-700 font-semibold",
   },
+};
+
+const REPORTED_DISPLAY_META = {
+  label: "Reported",
+  badgeTone: "bg-amber-100 text-amber-800 font-semibold",
 };
 
 export const normalizeBookingStatus = (value) => {
@@ -65,13 +65,13 @@ export const normalizeIssueStatus = (value) => {
 export const normalizeWorkflowBucket = (value) => {
   const normalizedValue = `${value || ""}`.trim().toUpperCase();
   if (normalizedValue === "REPORTED") {
-    return "REPORTED";
+    return "ISSUES";
   }
 
   return normalizeSharedWorkflowBucket(value);
 };
 
-const hasReportedTravelerIssues = (booking) => {
+export const hasReportedIssueState = (booking) => {
   const issueStatus = normalizeIssueStatus(booking?.issue_status);
   return (
     issueStatus === "REPORTED" ||
@@ -90,34 +90,29 @@ export const getWorkflowBucketLabel = (value) =>
   getSharedWorkflowBucketLabel(value);
 
 export const getBookingWorkflowBucket = (booking) =>
-  hasReportedTravelerIssues(booking) ? "REPORTED" : resolveWorkflowBucket(booking);
+  normalizeWorkflowBucket(booking?.workflow_bucket) ||
+  resolveWorkflowBucket(booking) ||
+  (hasReportedIssueState(booking) ? "ISSUES" : "");
 
 export const getBookingDisplayMeta = (booking) => {
   const workflowBucket = getBookingWorkflowBucket(booking);
   const issueStatus = normalizeIssueStatus(booking?.issue_status);
 
-  if (hasReportedTravelerIssues(booking)) {
-    return {
-      label: WORKFLOW_META.REPORTED.label,
-      badgeTone: WORKFLOW_META.REPORTED.badgeTone,
-    };
-  }
-
-  if (issueStatus === "OPERATOR_OBJECTION") {
+  if (workflowBucket === "ISSUES" && issueStatus === "OPERATOR_OBJECTION") {
     return {
       label: "Operator Objection",
       badgeTone: WORKFLOW_META.ISSUES.badgeTone,
     };
   }
 
-  if (issueStatus === "REPORTED") {
+  if (workflowBucket === "ISSUES" && hasReportedIssueState(booking)) {
     return {
-      label: "Reported",
-      badgeTone: WORKFLOW_META.REPORTED.badgeTone,
+      label: REPORTED_DISPLAY_META.label,
+      badgeTone: REPORTED_DISPLAY_META.badgeTone,
     };
   }
 
-  if (issueStatus && issueStatus !== "NONE") {
+  if (workflowBucket === "ISSUES" && issueStatus && issueStatus !== "NONE") {
     return {
       label: issueStatus.replace(/_/g, " "),
       badgeTone: WORKFLOW_META.ISSUES.badgeTone,
@@ -131,9 +126,13 @@ export const getBookingDisplayMeta = (booking) => {
 };
 
 export const getBookingWorkflowScreen = (booking) => {
-  if (hasReportedTravelerIssues(booking)) {
-    return "REPORTED";
+  const workflowBucket = getBookingWorkflowBucket(booking);
+  if (workflowBucket === "ISSUES") {
+    return "ISSUE";
   }
 
-  return resolveBookingDetailScreen(booking);
+  return resolveBookingDetailScreen({
+    ...booking,
+    workflow_bucket: workflowBucket,
+  });
 };

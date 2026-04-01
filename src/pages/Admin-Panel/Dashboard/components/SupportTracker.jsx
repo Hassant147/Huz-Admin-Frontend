@@ -6,7 +6,7 @@ import InProgressIcon from "../../../../assets/DB/Icon-1.svg";
 import SolvedComplaintsIcon from "../../../../assets/DB/Icon-2.svg";
 import { fetchOverallComplaintsCounts } from "../../../../utility/Api";
 import { AppCard } from "../../../../components/ui";
-import { getPartnerSessionToken } from "../../../../utility/session";
+import { getPartnerSessionToken } from "../../../../utility/partnerSession";
 
 const SupportTracker = () => {
   const [data, setData] = useState({

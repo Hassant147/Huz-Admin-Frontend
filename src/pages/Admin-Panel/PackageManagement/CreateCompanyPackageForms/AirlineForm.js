@@ -7,6 +7,10 @@ import {
 } from "../../../../utility/Api";
 import ClipLoader from "../../../../components/loader";
 import { BiErrorAlt } from "react-icons/bi";
+import {
+  PACKAGE_FLOW_STORAGE_KEYS,
+  readPackageFlowJson,
+} from "../packageFlow/packageFlowState";
 
 const airlines = [
   { value: "Saudia", label: "Saudia" },
@@ -60,48 +64,29 @@ const customSelectStyles = {
 };
 
 const FlightInfoForm = ({ formData, onChange, onNextTab, isEditing }) => {
-  const [flightDetails, setFlightDetails] = useState({
+  const [flightDetails, setFlightDetails] = useState(() => ({
     airline: "",
     ticketType: "",
     returnFlightIncluded: false,
     originCity: "",
     returnCity: "",
-  });
+    ...(readPackageFlowJson(PACKAGE_FLOW_STORAGE_KEYS.flightDetails, null) ||
+      formData ||
+      {}),
+  }));
 
   const [airlineSuggestions, setAirlineSuggestions] = useState([]);
   const [originCitySuggestions, setOriginCitySuggestions] = useState([]);
   const [returnCitySuggestions, setReturnCitySuggestions] = useState([]);
 
-  const initialStateSet = useRef(false);
   const originCityRef = useRef(null);
   const returnCityRef = useRef(null);
 
   useEffect(() => {
-    if (!initialStateSet.current) {
-      const savedData = localStorage.getItem("flightDetails");
-      if (savedData) {
-        setFlightDetails(JSON.parse(savedData));
-      }
-      initialStateSet.current = true;
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isEditing && formData && !initialStateSet.current) {
-      const airlineDetail = formData.airline_detail?.[0] || {};
-      setFlightDetails({
-        airline: airlineDetail.airline_name || "",
-        ticketType: airlineDetail.ticket_type || "",
-        returnFlightIncluded: airlineDetail.is_return_flight_included || false,
-        originCity: airlineDetail.origin_city || "",
-        returnCity: airlineDetail.return_city || "",
-      });
-      initialStateSet.current = true;
-    }
-  }, [isEditing, formData]);
-
-  useEffect(() => {
-    localStorage.setItem("flightDetails", JSON.stringify(flightDetails));
+    localStorage.setItem(
+      PACKAGE_FLOW_STORAGE_KEYS.flightDetails,
+      JSON.stringify(flightDetails)
+    );
   }, [flightDetails]);
 
   const [errors, setErrors] = useState({
@@ -194,7 +179,7 @@ const FlightInfoForm = ({ formData, onChange, onNextTab, isEditing }) => {
       isOriginCityValid &&
       isReturnCityValid
     ) {
-      const huzToken = localStorage.getItem("huz_token");
+      const huzToken = localStorage.getItem(PACKAGE_FLOW_STORAGE_KEYS.huzToken);
       const { partner_session_token } = JSON.parse(
         localStorage.getItem("SignedUp-User-Profile")
       );
@@ -215,11 +200,17 @@ const FlightInfoForm = ({ formData, onChange, onNextTab, isEditing }) => {
       try {
         if (isEditing) {
           response = await editPackageAirlineDetail(apiData);
-          onNextTab(response); // Pass the updated data to the parent component
         } else {
-          await enrollPackageAirlineDetail(apiData);
+          response = await enrollPackageAirlineDetail(apiData);
         }
-        onNextTab();
+
+        if (response && typeof response === "object") {
+          localStorage.setItem(
+            PACKAGE_FLOW_STORAGE_KEYS.packageDetail,
+            JSON.stringify(response)
+          );
+        }
+        onNextTab(response);
       } catch (error) {
         setApiError(error.message || "An error occurred");
       } finally {

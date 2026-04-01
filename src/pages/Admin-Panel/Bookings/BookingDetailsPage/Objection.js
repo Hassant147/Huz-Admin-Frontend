@@ -1,5 +1,5 @@
 import React from 'react';
-import { normalizeIssueStatus } from '../bookingWorkflowUtils';
+import { hasReportedIssueState, normalizeIssueStatus } from '../bookingWorkflowUtils';
 
 const Objection = ({booking}) => {
   if (!booking) {
@@ -8,7 +8,7 @@ const Objection = ({booking}) => {
 
   const latestObjection = booking?.booking_objections?.[0];
   const issueStatus = normalizeIssueStatus(booking?.issue_status);
-  const isReported = issueStatus === 'REPORTED';
+  const isReported = issueStatus !== 'OPERATOR_OBJECTION' && hasReportedIssueState(booking);
 
 
   return (

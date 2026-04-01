@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
     ...Object.fromEntries(
       Object.entries(env).filter(
         ([key]) =>
-          key.startsWith("REACT_APP_") ||
+          (key.startsWith("REACT_APP_") && key !== "REACT_APP_AUTH_TOKEN") ||
           key.startsWith("VITE_") ||
           key === "PUBLIC_URL"
       )
@@ -40,9 +40,6 @@ export default defineConfig(({ mode }) => {
       dedupe: ["react", "react-dom"],
     },
     server: {
-      fs: {
-        allow: [".."],
-      },
       port: 3000,
     },
     preview: {

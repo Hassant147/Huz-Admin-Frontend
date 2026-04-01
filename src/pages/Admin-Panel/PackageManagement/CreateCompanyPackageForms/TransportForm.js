@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   enrollPackageTransportDetail,
   editPackageTransportDetail,
@@ -6,6 +6,10 @@ import {
 import ClipLoader from "../../../../components/loader";
 import Select from "react-select";
 import { BiErrorAlt } from "react-icons/bi";
+import {
+  PACKAGE_FLOW_STORAGE_KEYS,
+  readPackageFlowJson,
+} from "../packageFlow/packageFlowState";
 
 const transportOptions = [
   { value: "Bus", label: "Bus" },
@@ -59,37 +63,20 @@ const customSelectStyles = {
 };
 
 const TransportForm = ({ formData, onChange, onNextTab, isEditing }) => {
-  const [transportDetails, setTransportDetails] = useState({
+  const [transportDetails, setTransportDetails] = useState(() => ({
     transport: "",
     type: "",
     routes: [],
-  });
-
-  const initialStateSet = useRef(false);
-
-  useEffect(() => {
-    if (!initialStateSet.current) {
-      const savedData = localStorage.getItem("transportDetails");
-      if (savedData) {
-        setTransportDetails(JSON.parse(savedData));
-      }
-      initialStateSet.current = true;
-    }
-  }, []);
+    ...(readPackageFlowJson(PACKAGE_FLOW_STORAGE_KEYS.transportDetails, null) ||
+      formData ||
+      {}),
+  }));
 
   useEffect(() => {
-    if (isEditing && formData && !initialStateSet.current) {
-      setTransportDetails({
-        transport: formData.transport || "",
-        type: formData.type || "",
-        routes: formData.routes || [],
-      });
-      initialStateSet.current = true;
-    }
-  }, [isEditing, formData]);
-
-  useEffect(() => {
-    localStorage.setItem("transportDetails", JSON.stringify(transportDetails));
+    localStorage.setItem(
+      PACKAGE_FLOW_STORAGE_KEYS.transportDetails,
+      JSON.stringify(transportDetails)
+    );
   }, [transportDetails]);
 
   const [errors, setErrors] = useState({
@@ -140,10 +127,14 @@ const TransportForm = ({ formData, onChange, onNextTab, isEditing }) => {
     const updatedRoutes = transportDetails.routes.includes(route)
       ? transportDetails.routes.filter((r) => r !== route)
       : [...transportDetails.routes, route];
-    setTransportDetails((prev) => ({
-      ...prev,
-      routes: updatedRoutes,
-    }));
+    setTransportDetails((prev) => {
+      const updatedDetails = {
+        ...prev,
+        routes: updatedRoutes,
+      };
+      onChange(updatedDetails);
+      return updatedDetails;
+    });
     validateRoutes(updatedRoutes);
   };
 
@@ -159,7 +150,7 @@ const TransportForm = ({ formData, onChange, onNextTab, isEditing }) => {
       const { partner_session_token } = JSON.parse(
         localStorage.getItem("SignedUp-User-Profile")
       );
-      const huzToken = localStorage.getItem("huz_token");
+      const huzToken = localStorage.getItem(PACKAGE_FLOW_STORAGE_KEYS.huzToken);
 
       const apiData = {
         partner_session_token,
@@ -171,14 +162,22 @@ const TransportForm = ({ formData, onChange, onNextTab, isEditing }) => {
 
       setLoading(true);
       setApiError("");
+      let response;
 
       try {
         if (isEditing) {
-          await editPackageTransportDetail(apiData);
+          response = await editPackageTransportDetail(apiData);
         } else {
-          await enrollPackageTransportDetail(apiData);
+          response = await enrollPackageTransportDetail(apiData);
         }
-        onNextTab();
+
+        if (response && typeof response === "object") {
+          localStorage.setItem(
+            PACKAGE_FLOW_STORAGE_KEYS.packageDetail,
+            JSON.stringify(response)
+          );
+        }
+        onNextTab(response);
       } catch (error) {
         setApiError(error.response?.data?.message || "An error occurred");
       } finally {
