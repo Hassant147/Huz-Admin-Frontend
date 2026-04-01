@@ -12,6 +12,9 @@ export const API_BASE_URL = resolveApiBaseURL();
 export const DEFAULT_AXIOS_CONFIG = {
   baseURL: API_BASE_URL,
   withCredentials: true,
+  // Axios 1.7+ no longer forwards the XSRF header for cross-origin requests
+  // unless withXSRFToken is enabled explicitly.
+  withXSRFToken: true,
   xsrfCookieName: "csrftoken",
   xsrfHeaderName: "X-CSRFToken",
   headers: {
