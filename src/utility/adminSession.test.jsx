@@ -2,19 +2,22 @@ import React, { StrictMode } from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { apiClient } = vi.hoisted(() => ({
+const { apiClient, setAdminCsrfToken } = vi.hoisted(() => ({
   apiClient: {
     get: vi.fn(),
     post: vi.fn(),
   },
+  setAdminCsrfToken: vi.fn(),
 }));
 
 vi.mock("./apiConfig", () => ({
   createApiClient: () => apiClient,
+  setAdminCsrfToken,
 }));
 
 import {
   AdminAuthProvider,
+  clearAdminSession,
   handleAdminUnauthorizedResponse,
   setAdminUnauthorizedHandler,
   useAdminAuth,
@@ -36,6 +39,7 @@ describe("AdminAuthProvider", () => {
   afterEach(() => {
     apiClient.get.mockReset();
     apiClient.post.mockReset();
+    setAdminCsrfToken.mockReset();
     window.localStorage.clear();
     setAdminUnauthorizedHandler(null);
     vi.restoreAllMocks();
@@ -82,6 +86,7 @@ describe("AdminAuthProvider", () => {
       status: 200,
       data: {
         authenticated: true,
+        csrf_token: "bootstrap-csrf-token",
         user: {
           username: "session-admin",
           email: "session.admin@example.com",
@@ -102,6 +107,7 @@ describe("AdminAuthProvider", () => {
     expect(screen.getByTestId("auth-state").textContent).toBe("authenticated");
     expect(screen.getByTestId("auth-message").textContent).toBe("");
     expect(getItemSpy).not.toHaveBeenCalledWith("SignedUp-User-Profile");
+    expect(setAdminCsrfToken).toHaveBeenCalledWith("bootstrap-csrf-token");
   });
 
   it("does not clear the admin session for csrf-specific 403 responses", async () => {
@@ -148,5 +154,14 @@ describe("AdminAuthProvider", () => {
 
     expect(window.localStorage.getItem("user-data")).toBeNull();
     expect(unauthorizedSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears the stored csrf token when the admin session is cleared", () => {
+    window.localStorage.setItem("user-data", JSON.stringify({ username: "admin" }));
+
+    clearAdminSession();
+
+    expect(setAdminCsrfToken).toHaveBeenCalledWith("");
+    expect(window.localStorage.getItem("user-data")).toBeNull();
   });
 });

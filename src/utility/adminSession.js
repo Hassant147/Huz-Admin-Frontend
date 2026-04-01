@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { createApiClient } from "./apiConfig";
+import { createApiClient, setAdminCsrfToken } from "./apiConfig";
 
 const ADMIN_USER_DATA_KEY = "user-data";
 const LEGACY_ADMIN_FLAG_KEY = "isSuperAdmin";
@@ -66,6 +66,10 @@ const normalizeAuthMessage = (payload, fallbackMessage) => {
   return fallbackMessage;
 };
 
+const syncAdminCsrfToken = (payload = {}) => {
+  setAdminCsrfToken(payload?.csrf_token || "");
+};
+
 const extractAdminErrorMessage = (payload) => {
   const message = `${payload?.message || payload?.detail || ""}`.trim();
   return message;
@@ -93,6 +97,8 @@ const shouldResetAdminSession = (status, payload) => {
 };
 
 export const clearAdminSession = () => {
+  setAdminCsrfToken("");
+
   if (typeof window === "undefined") {
     return;
   }
@@ -207,9 +213,9 @@ export const AdminAuthProvider = ({ children }) => {
 
   const refreshSession = async () => {
     const result = await fetchAdminSession();
-    clearAdminSession();
 
     if (result.ok && result.payload?.authenticated && result.payload?.user) {
+      syncAdminCsrfToken(result.payload);
       const nextState = buildAuthenticatedState(result.payload);
       setSessionState(nextState);
       return {
@@ -218,6 +224,7 @@ export const AdminAuthProvider = ({ children }) => {
       };
     }
 
+    clearAdminSession();
     const nextState = buildUnauthenticatedState(
       normalizeAuthMessage(result.payload, "Not authenticated.")
     );
@@ -258,6 +265,7 @@ export const AdminAuthProvider = ({ children }) => {
         clearAdminSession();
 
         if (result.ok && result.payload?.authenticated && result.payload?.user) {
+          syncAdminCsrfToken(result.payload);
           setSessionState(buildAuthenticatedState(result.payload));
           return;
         }
@@ -306,7 +314,7 @@ export const AdminAuthProvider = ({ children }) => {
     });
 
     if (result.ok && result.payload?.authenticated && result.payload?.user) {
-      clearAdminSession();
+      syncAdminCsrfToken(result.payload);
       const nextState = buildAuthenticatedState(result.payload);
       setSessionState(nextState);
       return {
