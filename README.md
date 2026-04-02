@@ -49,7 +49,7 @@ The production bundle is emitted to `build/`.
 
 ## GitHub Actions Deploy
 
-This repo can auto-deploy to Hostinger on pushes to `main` and `12-March`, or by running the `Deploy Admin Frontend` workflow manually.
+This repo auto-deploys to Hostinger from `main` only. `12-March` is treated as a development branch. You can also run the `Deploy Admin Frontend` workflow manually from GitHub Actions when needed.
 
 Required GitHub repository secrets:
 

@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - 12-March
   workflow_dispatch:
 
 concurrency:
