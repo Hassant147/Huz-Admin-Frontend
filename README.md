@@ -46,3 +46,27 @@ npm run build
 ```
 
 The production bundle is emitted to `build/`.
+
+## GitHub Actions Deploy
+
+This repo can auto-deploy to Hostinger on pushes to `main` and `12-March`, or by running the `Deploy Admin Frontend` workflow manually.
+
+Required GitHub repository secrets:
+
+- `HOSTINGER_SSH_HOST`
+- `HOSTINGER_SSH_PORT`
+- `HOSTINGER_SSH_USER`
+- `HOSTINGER_SSH_PASSWORD`
+
+The workflow builds with:
+
+```bash
+REACT_APP_API_BASE_URL=https://hajjumrah.org
+```
+
+Deployment target:
+
+- `https://huzadmin.hajjumrah.co`
+- remote path: `/home/u314778599/domains/hajjumrah.co/public_html/huzadmin`
+
+Each deploy keeps a server-side backup under `~/deploy-backups/github-actions/` before replacing the admin app folder.
