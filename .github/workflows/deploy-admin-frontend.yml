@@ -57,6 +57,45 @@ jobs:
           node-version: 20
           cache: npm
 
+      - name: Install SSH client tools
+        if: steps.deploy_secrets.outputs.ready == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sshpass
+
+      - name: Trust Hostinger host key
+        if: steps.deploy_secrets.outputs.ready == 'true'
+        shell: bash
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -p "${HOSTINGER_SSH_PORT}" -H "${HOSTINGER_SSH_HOST}" >> ~/.ssh/known_hosts
+
+      - name: Validate Hostinger SSH credentials
+        if: steps.deploy_secrets.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          export SSHPASS="${HOSTINGER_SSH_PASSWORD}"
+          if ! sshpass -e ssh \
+            -o BatchMode=no \
+            -o PreferredAuthentications=password \
+            -o PubkeyAuthentication=no \
+            -o StrictHostKeyChecking=yes \
+            -p "${HOSTINGER_SSH_PORT}" \
+            "${HOSTINGER_SSH_USER}@${HOSTINGER_SSH_HOST}" \
+            "echo hostinger-auth-ok"; then
+            {
+              echo "Hostinger SSH authentication failed before build."
+              echo
+              echo "Check these GitHub Secrets for this repository:"
+              echo "- HOSTINGER_SSH_HOST"
+              echo "- HOSTINGER_SSH_PORT"
+              echo "- HOSTINGER_SSH_USER"
+              echo "- HOSTINGER_SSH_PASSWORD"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
       - name: Install dependencies
         if: steps.deploy_secrets.outputs.ready == 'true'
         run: npm ci
@@ -82,24 +121,12 @@ jobs:
         shell: bash
         run: tar -czf "${ARTIFACT_NAME}" -C build .
 
-      - name: Install SSH client tools
-        if: steps.deploy_secrets.outputs.ready == 'true'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y sshpass
-
-      - name: Trust Hostinger host key
-        if: steps.deploy_secrets.outputs.ready == 'true'
-        shell: bash
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -p "${HOSTINGER_SSH_PORT}" -H "${HOSTINGER_SSH_HOST}" >> ~/.ssh/known_hosts
-
       - name: Upload build archive
         if: steps.deploy_secrets.outputs.ready == 'true'
         shell: bash
         run: |
-          sshpass -p "${HOSTINGER_SSH_PASSWORD}" scp \
+          export SSHPASS="${HOSTINGER_SSH_PASSWORD}"
+          sshpass -e scp \
             -P "${HOSTINGER_SSH_PORT}" \
             "${ARTIFACT_NAME}" \
             "${HOSTINGER_SSH_USER}@${HOSTINGER_SSH_HOST}:~/"
@@ -108,7 +135,8 @@ jobs:
         if: steps.deploy_secrets.outputs.ready == 'true'
         shell: bash
         run: |
-          sshpass -p "${HOSTINGER_SSH_PASSWORD}" ssh \
+          export SSHPASS="${HOSTINGER_SSH_PASSWORD}"
+          sshpass -e ssh \
             -p "${HOSTINGER_SSH_PORT}" \
             "${HOSTINGER_SSH_USER}@${HOSTINGER_SSH_HOST}" \
             "ARTIFACT_NAME='${ARTIFACT_NAME}' REMOTE_ROOT='${REMOTE_ROOT}' bash -s" <<'EOF'
