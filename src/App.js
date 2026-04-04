@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from "react";
-import { BrowserRouter as Router, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Navigate, Route, Routes } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./App.css";
@@ -8,15 +8,7 @@ import "./components/ScrollToTopButton.css";
 import ScrollToTopButton from "./components/ScrollToTopButton";
 import HeaderNavbarCom from "./components/HeaderNavbarComponent";
 import { RouteLoader } from "./components/ui";
-import { UserProvider } from "./context/UserContext";
-import { BookingProvider } from "./context/BookingContext";
 import { CurrencyProvider } from "./utility/CurrencyContext";
-import { getPartnerRouteAccessState } from "./utility/partnerSession";
-import {
-  buildAdminBookingDetailsPath,
-  buildAdminBookingSubflowPath,
-  parseAdminBookingNumberFromSearch,
-} from "./pages/Admin-Panel/Bookings/bookingRouteUtils";
 import { AdminAuthProvider, useAdminAuth } from "./utility/adminSession";
 
 const LoginPage = lazy(() => import("./pages/login/login"));
@@ -30,84 +22,12 @@ const ApprovePartnerAmountsPage = lazy(() => import("./pages/dashboard/dashboard
 const PartnerBookingDetailsPage = lazy(() => import("./pages/dashboard/dashboard-pages/ApproveAmountsPartners/BookingDetailsPage/BookingDetailsPage"));
 const DetailPage = lazy(() => import("./pages/dashboard/dashboard-pages/ApproveAmountsPages/BookingDetailsPage/PackageDetailPage"));
 
-const Dashboard = lazy(() => import("./pages/Admin-Panel/Dashboard/Dashboard"));
-const PackageType = lazy(() => import("./pages/Admin-Panel/PackageManagement/PackageType/PackageType"));
-const CreatePackagePage = lazy(() => import("./pages/Admin-Panel/PackageManagement/CreateCompanyPackageForms/CreatePackagePage"));
-const PackageDetails = lazy(() => import("./pages/Admin-Panel/PackageManagement/PackageDetailedPage/PackageDetailedPage"));
-const EditPackagePage = lazy(() => import("./pages/Admin-Panel/PackageManagement/EditCompanyPackageForms/EditPackagePage"));
-const ContinueCreatedCompanyForms = lazy(() => import("./pages/Admin-Panel/PackageManagement/ContinueCreatedCompanyForms/ContinueCreatedCompanyForms"));
-const PackageManagement = lazy(() => import("./pages/Admin-Panel/PackageManagement/PackagesList/PackageManagement"));
 const Profile = lazy(() => import("./pages/Admin-Panel/ProfilePage/Profile"));
-const Bookings = lazy(() => import("./pages/Admin-Panel/Bookings/Bookings"));
-const BookingDetails = lazy(() => import("./pages/Admin-Panel/Bookings/BookingDetailsPage/BookingDetails"));
-const Wallet = lazy(() => import("./pages/Admin-Panel/Wallet/wallet"));
-const AllPayments = lazy(() => import("./pages/Admin-Panel/Wallet/components/ReceivablePayments/AllPayments"));
-const Reviews = lazy(() => import("./pages/Admin-Panel/ReviewsRatings/Reviews"));
-const AirlineTickets = lazy(() => import("./pages/Admin-Panel/Bookings/BookingDetailsPage/ActiveSatusComponents/AirlineTickets/AirlineTickets"));
-const TransportArrangement = lazy(() => import("./pages/Admin-Panel/Bookings/BookingDetailsPage/ActiveSatusComponents/TransportArrangement/TransportArrangement"));
-const HotelArrangement = lazy(() => import("./pages/Admin-Panel/Bookings/BookingDetailsPage/ActiveSatusComponents/HotelArrangement/HotelArrangement"));
-const UploadEvisa = lazy(() => import("./pages/Admin-Panel/Bookings/BookingDetailsPage/ActiveSatusComponents/UploadVisa/UploadEvisa"));
-const WithdrawHistory = lazy(() => import("./pages/Admin-Panel/Wallet/components/WithdrawHistory"));
-const AccountStatementHistory = lazy(() => import("./pages/Admin-Panel/Wallet/components/AccountStatementHistory"));
-const Complaints = lazy(() => import("./pages/Admin-Panel/Complaints/Complaints"));
 const FQA = lazy(() => import("./pages/Admin-Panel/ExtraPages/FrequentlyAskedQuestions/FQA"));
 const PrivacyPolicy = lazy(() => import("./pages/Admin-Panel/ExtraPages/PrivacyPolicy/PrivacyPolicy"));
 const TermsServices = lazy(() => import("./pages/Admin-Panel/ExtraPages/TermsServices/TermsServices"));
 const Documentation = lazy(() => import("./pages/Admin-Panel/ExtraPages/Documentation-Page/doc"));
 const HotelCatalog = lazy(() => import("./pages/Admin-Panel/HotelCatalog/HotelCatalog"));
-
-const resolveLegacyBookingNumber = (location) =>
-  location?.state?.bookingNumber || parseAdminBookingNumberFromSearch(location?.search);
-
-const LegacyBookingDetailsRedirect = () => {
-  const location = useLocation();
-  const bookingNumber = resolveLegacyBookingNumber(location);
-
-  return (
-    <Navigate
-      to={buildAdminBookingDetailsPath(bookingNumber)}
-      replace
-      state={location.state}
-    />
-  );
-};
-
-const LegacyBookingSubflowRedirect = ({ flow }) => {
-  const location = useLocation();
-  const bookingNumber = resolveLegacyBookingNumber(location);
-
-  return (
-    <Navigate
-      to={buildAdminBookingSubflowPath(bookingNumber, flow)}
-      replace
-      state={location.state}
-    />
-  );
-};
-
-const LegacyUploadEvisaRedirect = () => (
-  <LegacyBookingSubflowRedirect flow="upload-evisa" />
-);
-
-const LegacyAirlineTicketsRedirect = () => (
-  <LegacyBookingSubflowRedirect flow="airline-tickets" />
-);
-
-const LegacyTransportArrangementRedirect = () => (
-  <LegacyBookingSubflowRedirect flow="transport-arrangement" />
-);
-
-const LegacyHotelArrangementRedirect = () => (
-  <LegacyBookingSubflowRedirect flow="hotel-arrangement" />
-);
-
-const LegacyTransportPackageRedirect = () => (
-  <Navigate
-    to="/package-type"
-    replace
-    state={{ unsupportedPackageType: "transport" }}
-  />
-);
 
 const SuperAdminProtectedRoute = ({ element }) => {
   const { isAuthenticated, isLoading } = useAdminAuth();
@@ -123,7 +43,7 @@ const SuperAdminProtectedRoute = ({ element }) => {
   return <Navigate to="/" replace />;
 };
 
-const PartnerPanelProtectedRoute = ({ element }) => {
+const AdminFallbackRoute = () => {
   const { isAuthenticated, isLoading } = useAdminAuth();
 
   if (isLoading) {
@@ -132,34 +52,6 @@ const PartnerPanelProtectedRoute = ({ element }) => {
 
   if (isAuthenticated) {
     return <Navigate to="/super-admin-dashboard" replace />;
-  }
-
-  const { isLoggedIn, isEmailVerified, partnerType, accountStatus } =
-    getPartnerRouteAccessState();
-
-  if (isLoggedIn && isEmailVerified && partnerType !== "NA" && accountStatus === "Active") {
-    return <UserProvider>{element}</UserProvider>;
-  }
-
-  return <Navigate to="/" replace />;
-};
-
-const SharedAppProtectedRoute = ({ element }) => {
-  const { isAuthenticated, isLoading } = useAdminAuth();
-
-  if (isLoading) {
-    return <RouteLoader />;
-  }
-
-  if (isAuthenticated) {
-    return element;
-  }
-
-  const { isLoggedIn, isEmailVerified, partnerType, accountStatus } =
-    getPartnerRouteAccessState();
-
-  if (isLoggedIn && isEmailVerified && partnerType !== "NA" && accountStatus === "Active") {
-    return <UserProvider>{element}</UserProvider>;
   }
 
   return <Navigate to="/" replace />;
@@ -241,37 +133,7 @@ const SUPER_ADMIN_ROUTES = [
   },
 ];
 
-const PARTNER_ROUTES = [
-  { path: "/partner-dashboard", Component: Dashboard },
-  { path: "/dashboard", Component: Dashboard },
-  { path: "/package-type", Component: PackageType },
-  { path: "/company/package-creation", Component: CreatePackagePage },
-  { path: "/packagedetails", Component: PackageDetails },
-  { path: "/packages", Component: PackageManagement },
-  { path: "/individual/package-creation", Component: LegacyTransportPackageRedirect },
-  { path: "/edit-package", Component: EditPackagePage, props: { isEditing: true } },
-  { path: "/company/continue-existing-package-creation", Component: ContinueCreatedCompanyForms },
-  { path: "/booking", Component: Bookings },
-  { path: "/booking/:bookingNumber", Component: BookingDetails },
-  { path: "/bookingdetails", Component: LegacyBookingDetailsRedirect },
-  { path: "/wallet", Component: Wallet },
-  { path: "/all-payments", Component: AllPayments },
-  { path: "/booking/:bookingNumber/upload-evisa", Component: UploadEvisa },
-  { path: "/booking/:bookingNumber/airline-tickets", Component: AirlineTickets },
-  { path: "/booking/:bookingNumber/transport-arrangement", Component: TransportArrangement },
-  { path: "/booking/:bookingNumber/hotel-arrangement", Component: HotelArrangement },
-  { path: "/package/upload-evisa", Component: LegacyUploadEvisaRedirect },
-  { path: "/package/airline-tickets", Component: LegacyAirlineTicketsRedirect },
-  { path: "/package/transport-arrangement", Component: LegacyTransportArrangementRedirect },
-  { path: "/package/hotel-arrangement", Component: LegacyHotelArrangementRedirect },
-  { path: "/reviews-ratings", Component: Reviews },
-  { path: "/withdrawhistory", Component: WithdrawHistory },
-  { path: "/accountstatementhistory", Component: AccountStatementHistory },
-  { path: "/complaints", Component: Complaints },
-];
-
 const SHARED_LAYOUT_ROUTES = [
-  { path: "/profile", Component: Profile },
   { path: "/faq", Component: FQA },
   { path: "/privacy-policy", Component: PrivacyPolicy },
   { path: "/terms-of-services", Component: TermsServices },
@@ -282,95 +144,79 @@ const App = () => {
   return (
     <div className="App admin-theme">
       <CurrencyProvider>
-        <BookingProvider>
-          <AdminAuthProvider>
-            <Router>
-              <Suspense fallback={<RouteLoader />}>
-                <Routes>
+        <AdminAuthProvider>
+          <Router>
+            <Suspense fallback={<RouteLoader />}>
+              <Routes>
+                <Route
+                  path="/"
+                  element={
+                    <LoginRedirectRoute
+                      element={
+                        <HeaderNavbarCom>
+                          <LoginPage />
+                        </HeaderNavbarCom>
+                      }
+                    />
+                  }
+                />
+
+                {SUPER_ADMIN_ROUTES.map(({
+                  path,
+                  title,
+                  subtitle,
+                  Component,
+                  showPageBanner = true,
+                }) => (
                   <Route
-                    path="/"
+                    key={path}
+                    path={path}
                     element={
-                      <LoginRedirectRoute
+                      <SuperAdminProtectedRoute
                         element={
-                          <HeaderNavbarCom>
-                            <LoginPage />
+                          <HeaderNavbarCom
+                            title={showPageBanner ? title : ""}
+                            subtitle={showPageBanner ? subtitle : ""}
+                          >
+                            <Component />
                           </HeaderNavbarCom>
                         }
                       />
                     }
                   />
+                ))}
 
+                <Route
+                  path="/profile"
+                  element={<SuperAdminProtectedRoute element={<Profile />} />}
+                />
+
+                {SHARED_LAYOUT_ROUTES.map(({ path, Component, props }) => (
                   <Route
-                    path="/access-profile"
-                    element={
-                      <SharedAppProtectedRoute
-                        element={<Navigate to="/profile" replace />}
-                      />
-                    }
+                    key={path}
+                    path={path}
+                    element={<SuperAdminProtectedRoute element={<Component {...(props || {})} />} />}
                   />
+                ))}
 
-                  {SUPER_ADMIN_ROUTES.map(({
-                    path,
-                    title,
-                    subtitle,
-                    Component,
-                    showPageBanner = true,
-                  }) => (
-                    <Route
-                      key={path}
-                      path={path}
-                      element={
-                        <SuperAdminProtectedRoute
-                          element={
-                            <HeaderNavbarCom
-                              title={showPageBanner ? title : ""}
-                              subtitle={showPageBanner ? subtitle : ""}
-                            >
-                              <Component />
-                            </HeaderNavbarCom>
-                          }
-                        />
-                      }
-                    />
-                  ))}
+                <Route path="*" element={<AdminFallbackRoute />} />
+              </Routes>
+            </Suspense>
 
-                  {PARTNER_ROUTES.map(({ path, Component, props }) => (
-                    <Route
-                      key={path}
-                      path={path}
-                      element={
-                        <PartnerPanelProtectedRoute
-                          element={<Component {...(props || {})} />}
-                        />
-                      }
-                    />
-                  ))}
-
-                  {SHARED_LAYOUT_ROUTES.map(({ path, Component, props }) => (
-                    <Route
-                      key={path}
-                      path={path}
-                      element={<SharedAppProtectedRoute element={<Component {...(props || {})} />} />}
-                    />
-                  ))}
-                </Routes>
-              </Suspense>
-
-              <ScrollToTopButton />
-              <ToastContainer
-                position="top-right"
-                autoClose={5000}
-                hideProgressBar
-                newestOnTop={false}
-                closeOnClick
-                rtl={false}
-                pauseOnFocusLoss
-                draggable
-                pauseOnHover
-              />
-            </Router>
-          </AdminAuthProvider>
-        </BookingProvider>
+            <ScrollToTopButton />
+            <ToastContainer
+              position="top-right"
+              autoClose={5000}
+              hideProgressBar
+              newestOnTop={false}
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+            />
+          </Router>
+        </AdminAuthProvider>
       </CurrencyProvider>
     </div>
   );

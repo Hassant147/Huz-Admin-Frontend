@@ -1,5 +1,4 @@
-import React, { useContext } from "react";
-import { BookingContext } from "../../../../../../context/BookingContext";
+import React from "react";
 import {
   AppCard,
   AppEmptyState,
@@ -9,8 +8,7 @@ import errorIcon from "../../../../../../assets/error.svg";
 import { withFallback } from "../bookingDetailsUtils";
 
 const HotelDetails = ({ booking: bookingProp }) => {
-  const { booking: contextBooking } = useContext(BookingContext);
-  const booking = bookingProp || contextBooking;
+  const booking = bookingProp || null;
   const hotelCards = Array.isArray(booking?.hotel_cards) ? booking.hotel_cards : [];
 
   return (

@@ -8,11 +8,11 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "./swiper.css";
 import { NumericFormat } from "react-number-format";
-import { getPackagesDetail } from "../../../../../utility/Api";
 import Loader from "../../../../../components/loader";
 import madinaJson from "../../../../../Madina_Hotels.json";
 import makkahJson from "../../../../../Makkah_Hotels.json";
 import { CurrencyContext } from "../../../../../utility/CurrencyContext";
+import { getPublicPackageDetail } from "../../../../../utility/publicPackagesApi";
 import {
   AppButton,
   AppCard,
@@ -95,7 +95,7 @@ const DetailPage = () => {
         return;
       }
 
-      const result = await getPackagesDetail(packageId);
+      const result = await getPublicPackageDetail(packageId);
       if (result?.error) {
         setError(result.error);
       } else if (Array.isArray(result?.data) && result.data[0]) {

@@ -1,11 +1,9 @@
-import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import ReactFlagsSelect from "react-flags-select";
-import { UserContext } from "../../context/UserContext";
 import avatar from "../../assets/nullprofile.svg";
 import bell from "../../assets/bell.svg";
-import logo from "../../assets/dashboard-header/logo.svg";
-import name from "../../assets/dashboard-header/name.svg";
+import logo from "../../assets/logo.svg";
+import name from "../../assets/name.svg";
 import logoutIcon from "../../assets/logout2.svg";
 import profile from "../../assets/user-check.svg";
 import faq from "../../assets/faq.svg";
@@ -13,9 +11,9 @@ import { AppButton, AppContainer } from "../ui";
 import { useAdminAuth } from "../../utility/adminSession";
 import "./HeaderForAdminPanel.css";
 
+const COUNTRY_OPTIONS = ["US", "PK", "GB", "FR", "DE"];
+
 const Header = () => {
-  const userContext = useContext(UserContext);
-  const userData = userContext?.userData;
   const [selectedCountry, setSelectedCountry] = useState("PK");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -42,24 +40,13 @@ const Header = () => {
   }, []);
 
   const handleSignOut = async () => {
-    if (isAuthenticated) {
-      await logoutAdmin();
-      navigate("/", { replace: true });
-      return;
-    }
-
-    localStorage.clear();
-    sessionStorage.clear();
+    await logoutAdmin();
     navigate("/", { replace: true });
   };
 
   const unreadCount = notifications.filter((notification) => notification.isNew).length;
-  const apiUrl = process.env.REACT_APP_API_BASE_URL;
-  const displayName = isAuthenticated
-    ? user?.name || user?.username || "Admin"
-    : userData?.user_name || "Admin";
-  const profileImageUrl =
-    !isAuthenticated && userData?.user_photo ? `${apiUrl}${userData.user_photo}` : avatar;
+  const displayName = user?.name || user?.username || "Admin";
+  const profileImageUrl = avatar;
 
   return (
     <header className="app-header-shell">
@@ -71,18 +58,21 @@ const Header = () => {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <ReactFlagsSelect
-            selected={selectedCountry}
-            countries={["US", "PK", "GB", "FR", "DE"]}
-            showSelectedLabel={false}
-            showOptionLabel={false}
-            onSelect={(code) => setSelectedCountry(code)}
-            components={{
-              DropdownIndicator: () => null,
-              IndicatorSeparator: () => null,
-            }}
-            className="hidden md:block"
-          />
+          <label className="hidden md:inline-flex items-center">
+            <span className="sr-only">Select admin locale</span>
+            <select
+              value={selectedCountry}
+              onChange={(event) => setSelectedCountry(event.target.value)}
+              className="admin-country-select"
+              aria-label="Select admin locale"
+            >
+              {COUNTRY_OPTIONS.map((code) => (
+                <option key={code} value={code}>
+                  {code}
+                </option>
+              ))}
+            </select>
+          </label>
 
           <div className="relative" ref={notificationRef}>
             <button type="button" onClick={() => setIsNotificationsOpen((prev) => !prev)} className="relative">
@@ -118,7 +108,7 @@ const Header = () => {
                   <img src={profileImageUrl} alt="Avatar" className="size-[38px] rounded-full object-cover" />
                   <div>
                     <h1 className="text-ink-900 font-semibold text-sm">{displayName}</h1>
-                    <div className="text-xs text-ink-500">{isAuthenticated ? "Admin" : "Partner"}</div>
+                    <div className="text-xs text-ink-500">{isAuthenticated ? "Admin" : "Admin Session"}</div>
                   </div>
                 </div>
                 <div className="border-t border-slate-200" />

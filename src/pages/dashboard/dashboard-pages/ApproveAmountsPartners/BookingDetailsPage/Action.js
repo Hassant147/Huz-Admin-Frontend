@@ -23,13 +23,10 @@ const Action = ({ booking }) => {
       toast.error("Booking data is not available.");
       return;
     }
-    const { partner_session_token, booking_number } = booking;
+    const { booking_number } = booking;
     setIsSubmitting(true);
     if (decision === "accept") {
-      const response = await updatePartnerPaymentStatus(
-        partner_session_token,
-        booking_number
-      );
+      const response = await updatePartnerPaymentStatus(booking_number);
 
       if (response.status === 200) {
         toast.success("Partner payment status updated successfully.");

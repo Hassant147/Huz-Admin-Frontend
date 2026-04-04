@@ -19,6 +19,10 @@ vi.mock("./pages/Admin-Panel/ProfilePage/Profile", () => ({
   default: () => <div>Admin Profile</div>,
 }));
 
+vi.mock("./pages/Admin-Panel/ExtraPages/FrequentlyAskedQuestions/FQA", () => ({
+  default: () => <div>Frequently Asked Questions</div>,
+}));
+
 vi.mock("./components/HeaderNavbarComponent", () => ({
   default: ({ title, subtitle, children }) => (
     <div>
@@ -31,14 +35,6 @@ vi.mock("./components/HeaderNavbarComponent", () => ({
 
 vi.mock("./components/ScrollToTopButton", () => ({
   default: () => null,
-}));
-
-vi.mock("./context/UserContext", () => ({
-  UserProvider: ({ children }) => children,
-}));
-
-vi.mock("./context/BookingContext", () => ({
-  BookingProvider: ({ children }) => children,
 }));
 
 vi.mock("./utility/CurrencyContext", () => ({
@@ -109,7 +105,7 @@ describe("admin app smoke coverage", () => {
     });
   });
 
-  it("allows authenticated admins into shared routes without consulting partner storage", async () => {
+  it("allows authenticated admins into the profile route without consulting partner storage", async () => {
     authState.isAuthenticated = true;
     authState.user = { name: "Amina Admin" };
     window.history.pushState({}, "", "/profile");
@@ -118,6 +114,19 @@ describe("admin app smoke coverage", () => {
     render(<App />);
 
     expect(await screen.findByText("Admin Profile")).toBeTruthy();
+    expect(window.location.pathname).toBe("/profile");
+    expect(getItemSpy).not.toHaveBeenCalledWith("SignedUp-User-Profile");
+  });
+
+  it("allows authenticated admins into shared content routes without consulting partner storage", async () => {
+    authState.isAuthenticated = true;
+    authState.user = { name: "Amina Admin" };
+    window.history.pushState({}, "", "/faq");
+    const getItemSpy = vi.spyOn(Storage.prototype, "getItem");
+
+    render(<App />);
+
+    expect(await screen.findByText("Frequently Asked Questions")).toBeTruthy();
     expect(getItemSpy).not.toHaveBeenCalledWith("SignedUp-User-Profile");
   });
 

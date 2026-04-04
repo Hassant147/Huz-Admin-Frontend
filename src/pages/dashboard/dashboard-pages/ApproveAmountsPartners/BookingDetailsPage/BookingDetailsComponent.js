@@ -24,12 +24,8 @@ const BookingDetailsComponent = ({ booking }) => {
         return;
       }
 
-      const { partner_session_token, booking_number } = booking;
       const { status, data, error: requestError } =
-        await fetchSettlementReviewBookingDetails(
-          partner_session_token,
-          booking_number
-        );
+        await fetchSettlementReviewBookingDetails(booking.booking_number);
 
       if (status === 200 && data) {
         setBookingDetails(data);

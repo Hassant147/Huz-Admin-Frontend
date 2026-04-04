@@ -18,7 +18,7 @@ import {
   deleteMasterHotel,
   getMasterHotels,
   updateMasterHotel,
-} from "../../../utility/Api";
+} from "../../../utility/masterHotelsApi";
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "";
 const MAX_IMAGE_COUNT = 6;

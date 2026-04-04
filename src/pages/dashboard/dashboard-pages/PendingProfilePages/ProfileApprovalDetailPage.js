@@ -17,15 +17,15 @@ const ProfileApprovalPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const locationCompany = location.state?.company || null;
-  const partnerSessionToken = useMemo(
+  const companyId = useMemo(
     () =>
-      locationCompany?.partner_session_token ||
-      getAdminDetailSearchParam(location.search, ADMIN_DETAIL_QUERY_KEYS.partnerSessionToken),
-    [location.search, locationCompany?.partner_session_token]
+      `${locationCompany?.partner_type_and_detail?.company_id || ""}` ||
+      getAdminDetailSearchParam(location.search, ADMIN_DETAIL_QUERY_KEYS.companyId),
+    [location.search, locationCompany?.partner_type_and_detail?.company_id]
   );
 
   const [company, setCompany] = useState(locationCompany);
-  const [loading, setLoading] = useState(!locationCompany && Boolean(partnerSessionToken));
+  const [loading, setLoading] = useState(!locationCompany && Boolean(companyId));
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -36,7 +36,7 @@ const ProfileApprovalPage = () => {
       return;
     }
 
-    if (!partnerSessionToken) {
+    if (!companyId) {
       setCompany(null);
       setLoading(false);
       setError("");
@@ -57,7 +57,8 @@ const ProfileApprovalPage = () => {
 
       if (status === 200 && Array.isArray(data)) {
         const matchedCompany = data.find(
-          (item) => `${item.partner_session_token || ""}` === `${partnerSessionToken || ""}`
+          (item) =>
+            `${item.partner_type_and_detail?.company_id || ""}` === `${companyId || ""}`
         );
 
         setCompany(matchedCompany || null);
@@ -80,7 +81,7 @@ const ProfileApprovalPage = () => {
     return () => {
       isMounted = false;
     };
-  }, [locationCompany, partnerSessionToken]);
+  }, [companyId, locationCompany]);
 
   if (loading) {
     return (

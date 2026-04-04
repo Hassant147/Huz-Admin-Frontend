@@ -143,7 +143,7 @@ const ApprovePartnerAmountsPage = () => {
           <div className="app-content-stack">
             {bookings.map((booking) => (
               <AppCard
-                key={`${booking.partner_session_token}-${booking.booking_number}`}
+                key={booking.booking_number}
                 className="border-slate-200"
               >
                 <article className="app-content-stack">
@@ -163,7 +163,6 @@ const ApprovePartnerAmountsPage = () => {
                         navigate(
                           buildAdminBookingDetailsPathWithSearch("/booking-details-for-partners", {
                             bookingNumber: booking.booking_number,
-                            partnerSessionToken: booking.partner_session_token,
                           }),
                           { state: { booking } }
                         )

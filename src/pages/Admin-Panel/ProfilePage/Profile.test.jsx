@@ -36,38 +36,6 @@ vi.mock("../../../utility/adminSession", () => ({
   useAdminAuth: () => authState,
 }));
 
-vi.mock("./UserInfoComponent", () => ({
-  default: () => <div>User Info</div>,
-}));
-
-vi.mock("./SidebarForCompany", () => ({
-  default: () => <div>Company Sidebar</div>,
-}));
-
-vi.mock("./SidebarForIndividual", () => ({
-  default: () => <div>Individual Sidebar</div>,
-}));
-
-vi.mock("./NavTabs", () => ({
-  default: () => <div>Tabs</div>,
-}));
-
-vi.mock("./CompanyDetail", () => ({
-  default: () => <div>Company Detail</div>,
-}));
-
-vi.mock("./IndividualDetail", () => ({
-  default: () => <div>Individual Detail</div>,
-}));
-
-vi.mock("./AddressDetail", () => ({
-  default: () => <div>Address Detail</div>,
-}));
-
-vi.mock("./ChangePassword", () => ({
-  default: () => <div>Change Password</div>,
-}));
-
 import Profile from "./Profile";
 
 describe("profile smoke coverage", () => {

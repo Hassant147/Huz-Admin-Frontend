@@ -131,6 +131,16 @@ const PARTNER_RECEIVABLES_REQUEST_PREFIX = buildSharedRequestKey(
   "super-admin",
   "partner-receivables"
 );
+const ADMIN_API_ROUTES = {
+  pendingCompanies: "/api/v1/admin/companies/pending/",
+  salesDirectors: "/api/v1/admin/sales-directors/",
+  companyStatus: "/api/v1/admin/companies/status/",
+  paidBookings: "/api/v1/admin/bookings/paid/",
+  bookingPaymentApproval: "/api/v1/admin/bookings/payments/approve/",
+  receivables: "/api/v1/admin/receivables/",
+  receivablesTransfer: "/api/v1/admin/receivables/transfer/",
+  operatorBookingDetail: "/api/v1/admin/operators/bookings/detail/",
+};
 
 const getPaidBookingsRequestKey = ({
   page = 1,
@@ -197,7 +207,7 @@ export const fetchPendingCompanies = async () => {
   try {
     const response = await requestWithFallback({
       method: "get",
-      url: "/management/fetch_all_pending_companies/",
+      url: ADMIN_API_ROUTES.pendingCompanies,
     });
 
     const pendingCompanies = Array.isArray(response.data)
@@ -225,7 +235,7 @@ export const fetchSalesDirectors = async () => {
   try {
     const response = await requestWithFallback({
       method: "get",
-      url: "/management/fetch_all_sale_directors/",
+      url: ADMIN_API_ROUTES.salesDirectors,
     });
     return {
       status: response.status,
@@ -245,16 +255,16 @@ export const fetchSalesDirectors = async () => {
 };
 
 export const updateCompanyStatus = async (
-  partner_session_token,
+  company_id,
   account_status,
   session_token = ""
 ) => {
   try {
     const response = await requestWithFallback({
       method: "put",
-      url: "/management/approved_or_reject_company/",
+      url: ADMIN_API_ROUTES.companyStatus,
       data: {
-        partner_session_token,
+        company_id,
         account_status,
         session_token, // Send the sales director session token if provided
       },
@@ -304,7 +314,7 @@ export const fetchPaidBookings = async (
       try {
         const response = await requestWithFallback({
           method: "get",
-          url: "/management/fetch_all_paid_bookings/",
+          url: ADMIN_API_ROUTES.paidBookings,
           params: {
             page,
             page_size: pageSize,
@@ -351,7 +361,7 @@ export const confirmBookingPayment = async (
   try {
     const response = await requestWithFallback({
       method: "put",
-      url: "/management/approve_booking_payment/",
+      url: ADMIN_API_ROUTES.bookingPaymentApproval,
       data: {
         session_token: user_session_token,
         booking_number: bookingNumber,
@@ -406,7 +416,7 @@ export const fetchPendingPartnerPayments = async (
       try {
         const response = await requestWithFallback({
           method: "get",
-          url: "/management/fetch_all_partner_receive_able_payments_details/",
+          url: ADMIN_API_ROUTES.receivables,
           params: {
             page,
             page_size: pageSize,
@@ -424,13 +434,12 @@ export const fetchPendingPartnerPayments = async (
 };
 
 // Define the function to fetch booking details
-export const fetchBookingDetails = async (partner_session_token, booking_number) => {
+export const fetchBookingDetails = async (booking_number) => {
   try {
     const response = await requestWithFallback({
       method: "get",
-      url: "/bookings/get_booking_detail_by_booking_number/",
+      url: ADMIN_API_ROUTES.operatorBookingDetail,
       params: {
-        partner_session_token,
         booking_number,
       },
     });
@@ -441,16 +450,12 @@ export const fetchBookingDetails = async (partner_session_token, booking_number)
   }
 };
 
-export const fetchSettlementReviewBookingDetails = async (
-  partner_session_token,
-  booking_number
-) => {
+export const fetchSettlementReviewBookingDetails = async (booking_number) => {
   try {
     const detailResponse = await requestWithFallback({
       method: "get",
-      url: "/bookings/get_booking_detail_by_booking_number/",
+      url: ADMIN_API_ROUTES.operatorBookingDetail,
       params: {
-        partner_session_token,
         booking_number,
       },
     });
@@ -484,13 +489,12 @@ export const fetchSettlementReviewBookingDetails = async (
 };
 
 //API for approving partner's payments
-export const updatePartnerPaymentStatus = async (partner_session_token, booking_number) => {
+export const updatePartnerPaymentStatus = async (booking_number) => {
   try {
     const response = await requestWithFallback({
       method: "put",
-      url: "/management/transfer_partner_receive_able_payments/",
+      url: ADMIN_API_ROUTES.receivablesTransfer,
       data: {
-        partner_session_token,
         booking_number,
       },
     });

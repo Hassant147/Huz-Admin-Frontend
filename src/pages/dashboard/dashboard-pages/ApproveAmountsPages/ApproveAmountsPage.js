@@ -247,7 +247,6 @@ const ApproveAmountsPage = () => {
                               navigate(
                                 buildAdminBookingDetailsPathWithSearch("/booking-details", {
                                   bookingNumber: booking.booking_number,
-                                  partnerSessionToken: booking.partner_session_token,
                                 }),
                                 { state: { booking } }
                               )

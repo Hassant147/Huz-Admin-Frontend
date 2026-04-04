@@ -23,12 +23,6 @@ const BookingDetailsPage = () => {
       getAdminDetailSearchParam(location.search, ADMIN_DETAIL_QUERY_KEYS.bookingNumber),
     [location.search, locationBooking?.booking_number]
   );
-  const partnerSessionToken = useMemo(
-    () =>
-      locationBooking?.partner_session_token ||
-      getAdminDetailSearchParam(location.search, ADMIN_DETAIL_QUERY_KEYS.partnerSessionToken),
-    [location.search, locationBooking?.partner_session_token]
-  );
 
   const [booking, setBooking] = useState(locationBooking);
   const [loading, setLoading] = useState(!locationBooking && Boolean(bookingNumber));
@@ -42,10 +36,10 @@ const BookingDetailsPage = () => {
       return;
     }
 
-    if (!bookingNumber || !partnerSessionToken) {
+    if (!bookingNumber) {
       setBooking(null);
       setLoading(false);
-      setError("Booking link is missing the booking number or partner session token.");
+      setError("Booking link is missing the booking number.");
       return;
     }
 
@@ -56,7 +50,6 @@ const BookingDetailsPage = () => {
       setError("");
 
       const { status, data, error: requestError } = await fetchSettlementReviewBookingDetails(
-        partnerSessionToken,
         bookingNumber
       );
 
@@ -79,7 +72,7 @@ const BookingDetailsPage = () => {
     return () => {
       isMounted = false;
     };
-  }, [bookingNumber, locationBooking, partnerSessionToken]);
+  }, [bookingNumber, locationBooking]);
 
   if (loading) {
     return (

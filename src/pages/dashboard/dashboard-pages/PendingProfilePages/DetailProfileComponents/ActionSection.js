@@ -41,8 +41,15 @@ const ActionSection = ({ company, onSubmit = () => {} }) => {
 
     setIsSubmitting(true);
 
+    const companyId = company?.partner_type_and_detail?.company_id;
+    if (!companyId) {
+      setIsSubmitting(false);
+      toast.error("Company reference is missing from this review record.");
+      return;
+    }
+
     const { status, message, error } = await updateCompanyStatus(
-      company.partner_session_token,
+      companyId,
       action === "approve" ? "Active" : "Rejected",
       action === "approve" ? saleDirector : ""
     );

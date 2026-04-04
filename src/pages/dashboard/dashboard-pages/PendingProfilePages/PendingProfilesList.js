@@ -123,7 +123,15 @@ const PendingProfilePage = () => {
 
           <div className="app-content-stack">
             {currentItems.map((company) => (
-              <AppCard key={company.partner_session_token} className="border-slate-200">
+              <AppCard
+                key={
+                  company.partner_type_and_detail?.company_id ||
+                  company.email ||
+                  company.phone_number ||
+                  company.name
+                }
+                className="border-slate-200"
+              >
                 <article className="app-content-stack">
                   <header className="flex flex-wrap items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
@@ -145,9 +153,14 @@ const PendingProfilePage = () => {
                       <AppButton
                         size="sm"
                         onClick={() =>
-                          navigate(buildAdminProfileApprovalPath(company.partner_session_token), {
-                            state: { company },
-                          })
+                          navigate(
+                            buildAdminProfileApprovalPath(
+                              company.partner_type_and_detail?.company_id
+                            ),
+                            {
+                              state: { company },
+                            }
+                          )
                         }
                       >
                         Review

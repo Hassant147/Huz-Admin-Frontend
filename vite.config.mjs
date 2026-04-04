@@ -1,6 +1,53 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv, transformWithEsbuild } from "vite";
 
+const VENDOR_CHUNK_RULES = [
+  {
+    name: "ui-vendor",
+    packages: new Set([
+      "react-icons",
+      "react-toastify",
+      "react-hot-toast",
+      "react-js-loader",
+      "react-spinners",
+      "swiper",
+    ]),
+  },
+  {
+    name: "forms-vendor",
+    packages: new Set([
+      "react-datepicker",
+      "react-number-format",
+      "react-phone-input-2",
+      "react-phone-number-input",
+      "react-select",
+      "react-dropzone",
+      "country-json",
+      "react-circular-progressbar",
+    ]),
+  },
+  {
+    name: "firebase-vendor",
+    packages: new Set(["firebase", "@firebase/app", "@firebase/auth"]),
+  },
+];
+
+const getPackageName = (id = "") => {
+  const nodeModulesIndex = id.lastIndexOf("node_modules/");
+  if (nodeModulesIndex === -1) {
+    return "";
+  }
+
+  const packagePath = id.slice(nodeModulesIndex + "node_modules/".length);
+  const [firstSegment, secondSegment] = packagePath.split("/");
+
+  if (firstSegment.startsWith("@")) {
+    return `${firstSegment}/${secondSegment || ""}`;
+  }
+
+  return firstSegment;
+};
+
 const jsxInJsPlugin = () => ({
   name: "jsx-in-js",
   async transform(code, id) {
@@ -48,6 +95,26 @@ export default defineConfig(({ mode }) => {
     build: {
       outDir: "build",
       emptyOutDir: true,
+      rollupOptions: {
+        output: {
+          onlyExplicitManualChunks: false,
+          manualChunks(id) {
+            if (!id.includes("node_modules/")) {
+              return undefined;
+            }
+
+            const packageName = getPackageName(id);
+
+            for (const group of VENDOR_CHUNK_RULES) {
+              if (group.packages.has(packageName)) {
+                return group.name;
+              }
+            }
+
+            return undefined;
+          },
+        },
+      },
     },
     optimizeDeps: {
       esbuildOptions: {

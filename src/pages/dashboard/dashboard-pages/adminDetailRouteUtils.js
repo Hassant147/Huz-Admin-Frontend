@@ -2,7 +2,7 @@ const normalizeToken = (value = "") => `${value || ""}`.trim();
 
 export const ADMIN_DETAIL_QUERY_KEYS = {
   bookingNumber: "booking_number",
-  partnerSessionToken: "partner_session_token",
+  companyId: "company_id",
 };
 
 export const getAdminDetailSearchParam = (search = "", key = "") => {
@@ -27,17 +27,15 @@ export const buildAdminDetailSearch = (params = {}) => {
   return queryString ? `?${queryString}` : "";
 };
 
-export const buildAdminProfileApprovalPath = (partnerSessionToken = "") =>
+export const buildAdminProfileApprovalPath = (companyId = "") =>
   `/profile-approval${buildAdminDetailSearch({
-    [ADMIN_DETAIL_QUERY_KEYS.partnerSessionToken]: partnerSessionToken,
+    [ADMIN_DETAIL_QUERY_KEYS.companyId]: companyId,
   })}`;
 
 export const buildAdminBookingDetailsPathWithSearch = (
   pathname = "/booking-details",
-  { bookingNumber = "", partnerSessionToken = "" } = {}
+  { bookingNumber = "" } = {}
 ) =>
   `${pathname}${buildAdminDetailSearch({
     [ADMIN_DETAIL_QUERY_KEYS.bookingNumber]: bookingNumber,
-    [ADMIN_DETAIL_QUERY_KEYS.partnerSessionToken]: partnerSessionToken,
   })}`;
-

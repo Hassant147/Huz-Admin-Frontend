@@ -93,4 +93,10 @@ export const createApiClient = (overrides = {}) => {
   return client;
 };
 
-export const isManagementRequest = (url = "") => `${url || ""}`.startsWith("/management/");
+export const isManagementRequest = (url = "") => {
+  const normalizedUrl = `${url || ""}`;
+  return (
+    normalizedUrl.startsWith("/management/") ||
+    normalizedUrl.startsWith("/api/v1/admin/")
+  );
+};
