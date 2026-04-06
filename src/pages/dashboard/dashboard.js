@@ -5,6 +5,7 @@ import {
   FiBriefcase,
   FiDollarSign,
   FiMapPin,
+  FiStar,
   FiUserCheck,
 } from "react-icons/fi";
 import { AppCard, AppContainer } from "../../components/ui";
@@ -42,6 +43,14 @@ const DASHBOARD_LINKS = [
     priority: "Catalog",
     icon: FiMapPin,
     accentClassName: "bg-cyan-50 text-cyan-700 border-cyan-100",
+  },
+  {
+    to: "/featured-packages",
+    title: "Featured Packages",
+    description: "Highlight packages for website featured placements.",
+    priority: "Catalog",
+    icon: FiStar,
+    accentClassName: "bg-amber-50 text-amber-700 border-amber-100",
   },
 ];
 

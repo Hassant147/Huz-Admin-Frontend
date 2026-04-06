@@ -15,6 +15,7 @@ const ADMIN_NAV_ITEMS = [
   { to: "/approve-amounts", label: "Approve Amounts", icon: dollarIcon },
   { to: "/approve-partners-amounts", label: "Partner Amounts", icon: packageIcon },
   { to: "/hotel-catalog", label: "Hotel Catalog", icon: mapPinIcon },
+  { to: "/featured-packages", label: "Featured Packages", icon: packageIcon },
   { to: "/profile", label: "My Profile", icon: profileIcon },
 ];
 

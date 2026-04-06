@@ -28,6 +28,7 @@ const PrivacyPolicy = lazy(() => import("./pages/Admin-Panel/ExtraPages/PrivacyP
 const TermsServices = lazy(() => import("./pages/Admin-Panel/ExtraPages/TermsServices/TermsServices"));
 const Documentation = lazy(() => import("./pages/Admin-Panel/ExtraPages/Documentation-Page/doc"));
 const HotelCatalog = lazy(() => import("./pages/Admin-Panel/HotelCatalog/HotelCatalog"));
+const FeaturedPackages = lazy(() => import("./pages/Admin-Panel/FeaturedPackages/FeaturedPackages"));
 
 const SuperAdminProtectedRoute = ({ element }) => {
   const { isAuthenticated, isLoading } = useAdminAuth();
@@ -129,6 +130,13 @@ const SUPER_ADMIN_ROUTES = [
     title: "Hotel Catalog",
     subtitle: "Manage reusable hotel templates used in partner package creation.",
     Component: HotelCatalog,
+    showPageBanner: false,
+  },
+  {
+    path: "/featured-packages",
+    title: "Featured Packages",
+    subtitle: "Manage packages highlighted on the website.",
+    Component: FeaturedPackages,
     showPageBanner: false,
   },
 ];
